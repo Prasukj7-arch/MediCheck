@@ -1,0 +1,63 @@
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Runtime files
+*.pid
+*.seed
+*.pid.lock
+
+# Temporary files
+*.tmp
+*.swp
+*.bak
+
+# Compiled code
+*.class
+*.o
+*.so
+*.exe
+*.dll
+*.pyc
+*.pyo
+*.out
+
+# Dependency directories
+node_modules/
+vendor/
+
+# Virtual environment
+env/
+venv/
+
+# Build directories
+dist/
+build/
+target/
+.gradle/
+
+# IDE/project settings
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS-specific
+ehthumbs.db
+Icon?
+Desktop.ini
+
+# Git-related
+*.orig
+*.rej
+*.patch
+
+# Environment & config (if not meant to be public)
+.env
+.env.local
+.env.*.local
+config.json
+credentials.json
