@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Report RAG Extractor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .perspective-selector {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .perspective-btn {
+            background: #e9ecef;
+            border: 2px solid transparent;
+            padding: 12px 24px;
+            margin: 0 10px;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .perspective-btn.active {
+            background: #3498db;
+            color: white;
+            border-color: #2980b9;
+        }
+
+        .perspective-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .perspective-content {
+            display: none;
+        }
+
+        .perspective-content.active {
+            display: block;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            border: 1px solid #e9ecef;
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upload-area {
+            border: 3px dashed #3498db;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #2980b9;
+            background: #e8f4fd;
+        }
+
+        .upload-area.dragover {
+            border-color: #27ae60;
+            background: #e8f8f5;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #3498db;
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .query-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .query-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+
+        .query-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .query-btn {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .query-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(39, 174, 96, 0.3);
+        }
+
+        .query-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .response-area {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 200px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .system-status {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .example-queries {
+            background: #e8f4fd;
+            border: 1px solid #bee5eb;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .example-queries h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .example-query {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 5px 0;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            border: 1px solid #e9ecef;
+        }
+
+        .example-query:hover {
+            background: #f8f9fa;
+            border-color: #3498db;
+        }
+
+        .perspective-info {
+            background: #e8f5e8;
+            border: 1px solid #c3e6cb;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .perspective-info h3 {
+            color: #155724;
+            margin-bottom: 10px;
+        }
+
+        .perspective-info p {
+            color: #0c5460;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .query-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 Medical Report RAG Extractor</h1>
+            <p>Upload medical reports and get expert insights using AI-powered analysis</p>
+        </div>
+
+        <div class="perspective-selector">
+            <button class="perspective-btn active" onclick="switchPerspective('patient')">👤 Patient View</button>
+            <button class="perspective-btn" onclick="switchPerspective('doctor')">👨‍⚕️ Doctor View</button>
+        </div>
+
+        <!-- Patient Perspective -->
+        <div class="perspective-content active" id="patient-content">
+            <div class="main-content">
+                <div class="perspective-info">
+                    <h3>👤 Patient Perspective</h3>
+                    <p>Get easy-to-understand explanations of your medical reports. Ask questions in simple terms and receive clear, patient-friendly responses about your health, medications, and treatment plans.</p>
+                </div>
+
+                <!-- System Status -->
+                <div class="system-status" id="systemStatus">
+                    <strong>System Status:</strong> Checking...
+                </div>
+
+                <!-- Upload Section -->
+                <div class="section">
+                    <h2>📄 Upload Medical Report</h2>
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-icon">📁</div>
+                        <h3>Drag & Drop your PDF here</h3>
+                        <p>or click to browse files</p>
+                        <input type="file" id="fileInput" class="file-input" accept=".pdf">
+                        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                            Choose PDF File
+                        </button>
+                    </div>
+                    <div id="uploadStatus"></div>
+                </div>
+
+                <!-- Query Section -->
+                <div class="section">
+                    <h2>🔍 Ask Questions (Patient View)</h2>
+                    <div class="query-section">
+                        <div>
+                            <textarea 
+                                id="queryInput" 
+                                class="query-input" 
+                                placeholder="Ask questions about your medical report in simple terms...&#10;&#10;Examples:&#10;- What does this report mean in simple terms?&#10;- What medications am I taking?&#10;- Are my test results normal?&#10;- What should I do next?"
+                            ></textarea>
+                            <button id="queryBtn" class="query-btn" onclick="sendQuery('patient')">
+                                Ask Question
+                            </button>
+                        </div>
+                        <div>
+                            <h3>Response:</h3>
+                            <div id="responseArea" class="response-area">
+                                Upload a medical report first, then ask questions about it.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Example Queries for Patients -->
+                    <div class="example-queries">
+                        <h3>💡 Patient-Friendly Questions:</h3>
+                        <div class="example-query" onclick="setQuery('What does this medical report mean in simple terms?')">
+                            What does this medical report mean in simple terms?
+                        </div>
+                        <div class="example-query" onclick="setQuery('What medications am I currently taking and why?')">
+                            What medications am I currently taking and why?
+                        </div>
+                        <div class="example-query" onclick="setQuery('Are my test results normal or concerning?')">
+                            Are my test results normal or concerning?
+                        </div>
+                        <div class="example-query" onclick="setQuery('What lifestyle changes should I make?')">
+                            What lifestyle changes should I make?
+                        </div>
+                        <div class="example-query" onclick="setQuery('What symptoms should I watch out for?')">
+                            What symptoms should I watch out for?
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Doctor Perspective -->
+        <div class="perspective-content" id="doctor-content">
+            <div class="main-content">
+                <div class="perspective-info">
+                    <h3>👨‍⚕️ Doctor Perspective</h3>
+                    <p>Get professional medical insights and detailed analysis. Ask clinical questions and receive expert-level responses with medical terminology, differential diagnoses, and treatment recommendations.</p>
+                </div>
+
+                <!-- System Status -->
+                <div class="system-status" id="systemStatus2">
+                    <strong>System Status:</strong> Checking...
+                </div>
+
+                <!-- Upload Section -->
+                <div class="section">
+                    <h2>📄 Upload Medical Report</h2>
+                    <div class="upload-area" id="uploadArea2">
+                        <div class="upload-icon">📁</div>
+                        <h3>Drag & Drop your PDF here</h3>
+                        <p>or click to browse files</p>
+                        <input type="file" id="fileInput2" class="file-input" accept=".pdf">
+                        <button class="upload-btn" onclick="document.getElementById('fileInput2').click()">
+                            Choose PDF File
+                        </button>
+                    </div>
+                    <div id="uploadStatus2"></div>
+                </div>
+
+                <!-- Query Section -->
+                <div class="section">
+                    <h2>🔍 Ask Questions (Doctor View)</h2>
+                    <div class="query-section">
+                        <div>
+                            <textarea 
+                                id="queryInput2" 
+                                class="query-input" 
+                                placeholder="Ask clinical questions about the medical report...&#10;&#10;Examples:&#10;- What are the key clinical findings?&#10;- What is the differential diagnosis?&#10;- What treatment protocols are recommended?&#10;- Are there any red flags?"
+                            ></textarea>
+                            <button id="queryBtn2" class="query-btn" onclick="sendQuery('doctor')">
+                                Ask Question
+                            </button>
+                        </div>
+                        <div>
+                            <h3>Response:</h3>
+                            <div id="responseArea2" class="response-area">
+                                Upload a medical report first, then ask questions about it.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Example Queries for Doctors -->
+                    <div class="example-queries">
+                        <h3>💡 Clinical Questions:</h3>
+                        <div class="example-query" onclick="setQuery2('What are the key clinical findings and their significance?')">
+                            What are the key clinical findings and their significance?
+                        </div>
+                        <div class="example-query" onclick="setQuery2('What is the differential diagnosis based on these findings?')">
+                            What is the differential diagnosis based on these findings?
+                        </div>
+                        <div class="example-query" onclick="setQuery2('What treatment protocols are recommended for this patient?')">
+                            What treatment protocols are recommended for this patient?
+                        </div>
+                        <div class="example-query" onclick="setQuery2('Are there any red flags or concerning findings?')">
+                            Are there any red flags or concerning findings?
+                        </div>
+                        <div class="example-query" onclick="setQuery2('What follow-up monitoring is indicated?')">
+                            What follow-up monitoring is indicated?
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPerspective = 'patient';
+        
+        // Check system status on load
+        checkSystemStatus();
+
+        function switchPerspective(perspective) {
+            // Update buttons
+            document.querySelectorAll('.perspective-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update content
+            document.querySelectorAll('.perspective-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            if (perspective === 'patient') {
+                document.getElementById('patient-content').classList.add('active');
+                currentPerspective = 'patient';
+            } else {
+                document.getElementById('doctor-content').classList.add('active');
+                currentPerspective = 'doctor';
+            }
+            
+            // Check system status for the new perspective
+            checkSystemStatus();
+        }
+
+        // File upload handling for patient view
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const queryBtn = document.getElementById('queryBtn');
+        const responseArea = document.getElementById('responseArea');
+
+        // File upload handling for doctor view
+        const fileInput2 = document.getElementById('fileInput2');
+        const uploadArea2 = document.getElementById('uploadArea2');
+        const uploadStatus2 = document.getElementById('uploadStatus2');
+        const queryBtn2 = document.getElementById('queryBtn2');
+        const responseArea2 = document.getElementById('responseArea2');
+
+        // Drag and drop functionality for patient view
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload(files[0], 'patient');
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0], 'patient');
+            }
+        });
+
+        // Drag and drop functionality for doctor view
+        uploadArea2.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea2.classList.add('dragover');
+        });
+
+        uploadArea2.addEventListener('dragleave', () => {
+            uploadArea2.classList.remove('dragover');
+        });
+
+        uploadArea2.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea2.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload(files[0], 'doctor');
+            }
+        });
+
+        fileInput2.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0], 'doctor');
+            }
+        });
+
+        function handleFileUpload(file, perspective) {
+            if (!file.type.includes('pdf')) {
+                showStatus('Please select a PDF file.', 'error', perspective);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            showStatus('Uploading and processing PDF...', 'info', perspective);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showStatus(data.error, 'error', perspective);
+                } else {
+                    showStatus(`✅ ${data.message} (${data.chunks_created} chunks created)`, 'success', perspective);
+                    if (perspective === 'patient') {
+                        queryBtn.disabled = false;
+                    } else {
+                        queryBtn2.disabled = false;
+                    }
+                }
+            })
+            .catch(error => {
+                showStatus('Error uploading file: ' + error.message, 'error', perspective);
+            });
+        }
+
+        function sendQuery(perspective) {
+            const queryInput = perspective === 'patient' ? document.getElementById('queryInput') : document.getElementById('queryInput2');
+            const queryBtn = perspective === 'patient' ? document.getElementById('queryBtn') : document.getElementById('queryBtn2');
+            const responseArea = perspective === 'patient' ? document.getElementById('responseArea') : document.getElementById('responseArea2');
+            
+            const query = queryInput.value.trim();
+            if (!query) {
+                showStatus('Please enter a question.', 'error', perspective);
+                return;
+            }
+
+            queryBtn.disabled = true;
+            queryBtn.innerHTML = '<div class="loading"></div>Processing...';
+            responseArea.textContent = 'Generating response...';
+
+            fetch('/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    query: query,
+                    perspective: perspective
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    responseArea.textContent = 'Error: ' + data.error;
+                } else {
+                    responseArea.textContent = data.response;
+                }
+            })
+            .catch(error => {
+                responseArea.textContent = 'Error: ' + error.message;
+            })
+            .finally(() => {
+                queryBtn.disabled = false;
+                queryBtn.textContent = 'Ask Question';
+            });
+        }
+
+        function setQuery(query) {
+            document.getElementById('queryInput').value = query;
+        }
+
+        function setQuery2(query) {
+            document.getElementById('queryInput2').value = query;
+        }
+
+        function showStatus(message, type, perspective) {
+            const statusElement = perspective === 'patient' ? uploadStatus : uploadStatus2;
+            statusElement.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function checkSystemStatus() {
+            const statusElement = currentPerspective === 'patient' ? 
+                document.getElementById('systemStatus') : 
+                document.getElementById('systemStatus2');
+            
+            fetch('/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    statusElement.innerHTML = 
+                        `<strong>System Status:</strong> Error - ${data.error}`;
+                } else {
+                    statusElement.innerHTML = 
+                        `<strong>System Status:</strong> ✅ Healthy (${data.documents_stored} documents stored)`;
+                }
+            })
+            .catch(error => {
+                statusElement.innerHTML = 
+                    `<strong>System Status:</strong> ❌ Connection Error`;
+            });
+        }
+
+        // Enter key to send query
+        document.getElementById('queryInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendQuery('patient');
+            }
+        });
+
+        document.getElementById('queryInput2').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendQuery('doctor');
+            }
+        });
+    </script>
+</body>
+</html>
