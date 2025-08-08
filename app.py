@@ -18,6 +18,7 @@ from functools import wraps
 import cv2
 from PIL import Image
 import base64
+from datetime import datetime, timedelta
 
 # Import the symptom scanner
 try:
@@ -32,6 +33,15 @@ try:
 except ImportError:
     # If the module doesn't exist, we'll create a placeholder
     MedicalChatbot = None
+
+# Import Supabase components
+try:
+    from backend.database_models import db_models
+    from backend.supabase_config import get_supabase_client
+    SUPABASE_AVAILABLE = True
+except ImportError:
+    SUPABASE_AVAILABLE = False
+    print("Warning: Supabase not available. Using in-memory storage.")
 
 # Load environment variables
 load_dotenv()
@@ -387,12 +397,28 @@ def login():
         email = data.get('email')
         password = data.get('password')
         
-        if email in users and check_password_hash(users[email]['password'], password):
-            session['user_id'] = email
-            session['user_name'] = users[email]['name']
-            return jsonify({'success': True, 'redirect': url_for('homepage')})
-        else:
-            return jsonify({'success': False, 'error': 'Invalid email or password'}), 401
+        try:
+            if SUPABASE_AVAILABLE:
+                # Use Supabase database
+                user = db_models.get_user_by_email(email)
+                if user and check_password_hash(user['password_hash'], password):
+                    session['user_id'] = user['id']
+                    session['user_name'] = user['name']
+                    session['user_email'] = user['email']
+                    return jsonify({'success': True, 'redirect': url_for('homepage')})
+                else:
+                    return jsonify({'success': False, 'error': 'Invalid email or password'}), 401
+            else:
+                # Fallback to in-memory storage
+                if email in users and check_password_hash(users[email]['password'], password):
+                    session['user_id'] = email
+                    session['user_name'] = users[email]['name']
+                    return jsonify({'success': True, 'redirect': url_for('homepage')})
+                else:
+                    return jsonify({'success': False, 'error': 'Invalid email or password'}), 401
+        except Exception as e:
+            logger.error(f"Login error: {e}")
+            return jsonify({'success': False, 'error': 'Database error occurred'}), 500
     
     return render_template('login.html')
 
@@ -405,17 +431,36 @@ def signup():
         email = data.get('email')
         password = data.get('password')
         
-        if email in users:
-            return jsonify({'success': False, 'error': 'Email already registered'}), 400
-        
-        users[email] = {
-            'name': name,
-            'password': generate_password_hash(password)
-        }
-        
-        session['user_id'] = email
-        session['user_name'] = name
-        return jsonify({'success': True, 'redirect': url_for('homepage')})
+        try:
+            if SUPABASE_AVAILABLE:
+                # Use Supabase database
+                existing_user = db_models.get_user_by_email(email)
+                if existing_user:
+                    return jsonify({'success': False, 'error': 'Email already registered'}), 400
+                
+                password_hash = generate_password_hash(password)
+                user = db_models.create_user(email, password_hash, name)
+                
+                session['user_id'] = user['id']
+                session['user_name'] = user['name']
+                session['user_email'] = user['email']
+                return jsonify({'success': True, 'redirect': url_for('homepage')})
+            else:
+                # Fallback to in-memory storage
+                if email in users:
+                    return jsonify({'success': False, 'error': 'Email already registered'}), 400
+                
+                users[email] = {
+                    'name': name,
+                    'password': generate_password_hash(password)
+                }
+                
+                session['user_id'] = email
+                session['user_name'] = name
+                return jsonify({'success': True, 'redirect': url_for('homepage')})
+        except Exception as e:
+            logger.error(f"Signup error: {e}")
+            return jsonify({'success': False, 'error': 'Database error occurred'}), 500
     
     return render_template('signup.html')
 
@@ -536,6 +581,57 @@ def chatbot():
         
         if not message:
             return jsonify({'error': 'No message provided'}), 400
+        
+        # Check if this is an appointment booking request
+        appointment_keywords = ['book appointment', 'schedule appointment', 'make appointment', 'appointment booking']
+        if any(keyword in message.lower() for keyword in appointment_keywords):
+            # Handle appointment booking through chatbot by calling the function directly
+            try:
+                if not SUPABASE_AVAILABLE:
+                    return jsonify({'error': 'Database not available'}), 503
+                
+                user_id = session.get('user_id')
+                
+                # Parse appointment details from chatbot message
+                appointment_details = parse_appointment_from_message(message)
+                
+                if not appointment_details:
+                    return jsonify({
+                        'response': "I can help you book an appointment! Please provide the following details:\n- Doctor's name\n- Specialty (e.g., Cardiology, Dermatology)\n- Preferred date (YYYY-MM-DD)\n- Preferred time (HH:MM)\n- Reason for visit\n\nExample: 'I want to book an appointment with Dr. Smith for Cardiology on 2024-01-15 at 10:00 for chest pain'",
+                        'follow_up_questions': [
+                            "What specialty do you need?",
+                            "What date would you prefer?",
+                            "What time works best for you?"
+                        ]
+                    })
+                
+                # Create the appointment
+                appointment = db_models.create_appointment(
+                    user_id=user_id,
+                    doctor_name=appointment_details['doctor_name'],
+                    specialty=appointment_details['specialty'],
+                    appointment_date=appointment_details['appointment_date'],
+                    appointment_time=appointment_details['appointment_time'],
+                    reason=appointment_details['reason']
+                )
+                
+                return jsonify({
+                    'response': f"Great! I've successfully booked your appointment with {appointment_details['doctor_name']} on {appointment_details['appointment_date']} at {appointment_details['appointment_time']}. Your appointment ID is {appointment['id']}. Please arrive 10 minutes before your scheduled time.",
+                    'follow_up_questions': [
+                        "Would you like to view your upcoming appointments?",
+                        "Do you need to reschedule this appointment?",
+                        "Is there anything else I can help you with?"
+                    ]
+                })
+            except Exception as e:
+                logger.error(f"Error booking appointment through chatbot: {e}")
+                return jsonify({
+                    'response': "I'm sorry, I encountered an error while booking your appointment. Please try again or contact support.",
+                    'follow_up_questions': [
+                        "Would you like to try booking again?",
+                        "Should I connect you to support?"
+                    ]
+                })
         
         # Use the medical chatbot if available
         if medical_chatbot:
@@ -717,6 +813,242 @@ def get_condition_info(condition):
     except Exception as e:
         logger.error(f"Error getting condition info: {e}")
         return jsonify({'error': f'Error getting condition info: {str(e)}'}), 500
+
+# Appointment Booking Routes
+@app.route('/appointments', methods=['GET'])
+@login_required
+def get_appointments():
+    """Get all appointments for the current user"""
+    try:
+        if not SUPABASE_AVAILABLE:
+            return jsonify({'error': 'Database not available'}), 503
+        
+        user_id = session.get('user_id')
+        appointments = db_models.get_user_appointments(user_id)
+        return jsonify({'appointments': appointments})
+    except Exception as e:
+        logger.error(f"Error getting appointments: {e}")
+        return jsonify({'error': f'Error getting appointments: {str(e)}'}), 500
+
+@app.route('/appointments', methods=['POST'])
+@login_required
+def create_appointment():
+    """Create a new appointment"""
+    try:
+        if not SUPABASE_AVAILABLE:
+            return jsonify({'error': 'Database not available'}), 503
+        
+        data = request.get_json()
+        user_id = session.get('user_id')
+        
+        required_fields = ['doctor_name', 'specialty', 'appointment_date', 'appointment_time', 'reason']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        appointment = db_models.create_appointment(
+            user_id=user_id,
+            doctor_name=data['doctor_name'],
+            specialty=data['specialty'],
+            appointment_date=data['appointment_date'],
+            appointment_time=data['appointment_time'],
+            reason=data['reason']
+        )
+        
+        return jsonify({'success': True, 'appointment': appointment})
+    except Exception as e:
+        logger.error(f"Error creating appointment: {e}")
+        return jsonify({'error': f'Error creating appointment: {str(e)}'}), 500
+
+@app.route('/appointments/<int:appointment_id>', methods=['PUT'])
+@login_required
+def update_appointment(appointment_id):
+    """Update an existing appointment"""
+    try:
+        if not SUPABASE_AVAILABLE:
+            return jsonify({'error': 'Database not available'}), 503
+        
+        data = request.get_json()
+        user_id = session.get('user_id')
+        
+        # Verify the appointment belongs to the user
+        appointments = db_models.get_user_appointments(user_id)
+        appointment_ids = [apt['id'] for apt in appointments]
+        
+        if appointment_id not in appointment_ids:
+            return jsonify({'error': 'Appointment not found'}), 404
+        
+        updated_appointment = db_models.update_appointment(appointment_id, data)
+        return jsonify({'success': True, 'appointment': updated_appointment})
+    except Exception as e:
+        logger.error(f"Error updating appointment: {e}")
+        return jsonify({'error': f'Error updating appointment: {str(e)}'}), 500
+
+@app.route('/appointments/<int:appointment_id>', methods=['DELETE'])
+@login_required
+def delete_appointment(appointment_id):
+    """Delete an appointment"""
+    try:
+        if not SUPABASE_AVAILABLE:
+            return jsonify({'error': 'Database not available'}), 503
+        
+        user_id = session.get('user_id')
+        
+        # Verify the appointment belongs to the user
+        appointments = db_models.get_user_appointments(user_id)
+        appointment_ids = [apt['id'] for apt in appointments]
+        
+        if appointment_id not in appointment_ids:
+            return jsonify({'error': 'Appointment not found'}), 404
+        
+        db_models.delete_appointment(appointment_id)
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"Error deleting appointment: {e}")
+        return jsonify({'error': f'Error deleting appointment: {str(e)}'}), 500
+
+@app.route('/appointments/available-slots', methods=['GET'])
+@login_required
+def get_available_slots():
+    """Get available appointment slots for a specific date"""
+    try:
+        if not SUPABASE_AVAILABLE:
+            return jsonify({'error': 'Database not available'}), 503
+        
+        date = request.args.get('date')
+        specialty = request.args.get('specialty')
+        
+        if not date:
+            return jsonify({'error': 'Date parameter is required'}), 400
+        
+        slots = db_models.get_available_slots(date, specialty)
+        return jsonify({'slots': slots})
+    except Exception as e:
+        logger.error(f"Error getting available slots: {e}")
+        return jsonify({'error': f'Error getting available slots: {str(e)}'}), 500
+
+@app.route('/appointments/specialties', methods=['GET'])
+@login_required
+def get_specialties():
+    """Get list of available medical specialties"""
+    try:
+        if not SUPABASE_AVAILABLE:
+            return jsonify({'error': 'Database not available'}), 503
+        
+        specialties = db_models.get_specialties()
+        return jsonify({'specialties': specialties})
+    except Exception as e:
+        logger.error(f"Error getting specialties: {e}")
+        return jsonify({'error': f'Error getting specialties: {str(e)}'}), 500
+
+# Chatbot appointment booking
+@app.route('/chatbot/appointment', methods=['POST'])
+@login_required
+def chatbot_appointment():
+    """Handle appointment booking through chatbot"""
+    try:
+        if not SUPABASE_AVAILABLE:
+            return jsonify({'error': 'Database not available'}), 503
+        
+        data = request.get_json()
+        user_id = session.get('user_id')
+        message = data.get('message', '').lower()
+        
+        # Parse appointment details from chatbot message
+        appointment_details = parse_appointment_from_message(message)
+        
+        if not appointment_details:
+            return jsonify({
+                'response': "I can help you book an appointment! Please provide the following details:\n- Doctor's name\n- Specialty (e.g., Cardiology, Dermatology)\n- Preferred date (YYYY-MM-DD)\n- Preferred time (HH:MM)\n- Reason for visit\n\nExample: 'I want to book an appointment with Dr. Smith for Cardiology on 2024-01-15 at 10:00 for chest pain'",
+                'follow_up_questions': [
+                    "What specialty do you need?",
+                    "What date would you prefer?",
+                    "What time works best for you?"
+                ]
+            })
+        
+        # Create the appointment
+        appointment = db_models.create_appointment(
+            user_id=user_id,
+            doctor_name=appointment_details['doctor_name'],
+            specialty=appointment_details['specialty'],
+            appointment_date=appointment_details['appointment_date'],
+            appointment_time=appointment_details['appointment_time'],
+            reason=appointment_details['reason']
+        )
+        
+        return jsonify({
+            'response': f"Great! I've successfully booked your appointment with {appointment_details['doctor_name']} on {appointment_details['appointment_date']} at {appointment_details['appointment_time']}. Your appointment ID is {appointment['id']}. Please arrive 10 minutes before your scheduled time.",
+            'follow_up_questions': [
+                "Would you like to view your upcoming appointments?",
+                "Do you need to reschedule this appointment?",
+                "Is there anything else I can help you with?"
+            ]
+        })
+    except Exception as e:
+        logger.error(f"Error booking appointment through chatbot: {e}")
+        return jsonify({
+            'response': "I'm sorry, I encountered an error while booking your appointment. Please try again or contact support.",
+            'follow_up_questions': [
+                "Would you like to try booking again?",
+                "Should I connect you to support?"
+            ]
+        })
+
+def parse_appointment_from_message(message: str) -> dict:
+    """Parse appointment details from chatbot message"""
+    try:
+        # This is a simple parser - in production, you'd want a more sophisticated NLP approach
+        import re
+        
+        # Extract doctor name (assuming format: "Dr. Name" or "Dr Name")
+        doctor_match = re.search(r'Dr\.?\s+([A-Za-z]+)', message)
+        doctor_name = doctor_match.group(1) if doctor_match else "Dr. General"
+        
+        # Extract specialty
+        specialties = db_models.get_specialties()
+        specialty = None
+        for spec in specialties:
+            if spec.lower() in message.lower():
+                specialty = spec
+                break
+        if not specialty:
+            specialty = "General Medicine"
+        
+        # Extract date (YYYY-MM-DD format)
+        date_match = re.search(r'(\d{4}-\d{2}-\d{2})', message)
+        if not date_match:
+            # Try to parse other date formats
+            date_match = re.search(r'(\d{1,2}/\d{1,2}/\d{4})', message)
+            if date_match:
+                # Convert MM/DD/YYYY to YYYY-MM-DD
+                date_str = date_match.group(1)
+                from datetime import datetime
+                date_obj = datetime.strptime(date_str, '%m/%d/%Y')
+                appointment_date = date_obj.strftime('%Y-%m-%d')
+            else:
+                return None
+        else:
+            appointment_date = date_match.group(1)
+        
+        # Extract time (HH:MM format)
+        time_match = re.search(r'(\d{1,2}:\d{2})', message)
+        appointment_time = time_match.group(1) if time_match else "09:00"
+        
+        # Extract reason (everything after "for" or "because")
+        reason_match = re.search(r'(?:for|because)\s+(.+)', message)
+        reason = reason_match.group(1) if reason_match else "General consultation"
+        
+        return {
+            'doctor_name': f"Dr. {doctor_name}",
+            'specialty': specialty,
+            'appointment_date': appointment_date,
+            'appointment_time': appointment_time,
+            'reason': reason
+        }
+    except Exception as e:
+        logger.error(f"Error parsing appointment from message: {e}")
+        return None
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

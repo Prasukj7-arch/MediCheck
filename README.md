@@ -8,15 +8,22 @@ MediCheck is a comprehensive AI-powered medical assistant that helps users under
 - **User Registration**: Create new accounts with email and password
 - **User Login**: Secure login with session management
 - **User Dashboard**: Personalized homepage with user information
+- **Database Integration**: Supabase database for persistent user data
 
 ### 🏠 Homepage with Sidebar Navigation
 - **Dashboard**: Overview of all available features
-- **ChatBot**: AI-powered medical assistant with voice input
 - **Book Appointment Details**: Schedule and manage medical appointments
 - **Symptom Scanner**: Upload images or use live camera for symptom analysis
 - **Report Analysis**: Upload and analyze medical reports with AI
-- **Exercise & Home Diet Planner**: Get personalized health recommendations
 - **SOS**: Emergency services and critical health information
+
+### 📅 Appointment Booking System
+- **Manual Booking**: Complete appointment booking form with doctor selection, specialty, date, time, and reason
+- **Chatbot Booking**: Book appointments through natural language conversation with the AI chatbot
+- **Appointment Management**: View, edit, and delete existing appointments
+- **Availability Checking**: Check available time slots for specific dates and specialties
+- **Specialty Selection**: Choose from a comprehensive list of medical specialties
+- **Real-time Updates**: Instant updates when appointments are booked or modified
 
 ### 🤖 AI ChatBot with Voice Input
 - **Text Chat**: Type questions and get instant responses
@@ -25,6 +32,7 @@ MediCheck is a comprehensive AI-powered medical assistant that helps users under
 - **Conversation Context**: Maintains conversation history for personalized responses
 - **Follow-up Questions**: Generates relevant follow-up questions to better understand your situation
 - **Medical Filtering**: Only responds to health-related questions
+- **Appointment Booking**: Book appointments through natural language conversation
 - **24/7 Availability**: Always available for your health concerns
 
 ### 🔍 Symptom Scanner
@@ -60,11 +68,24 @@ MediCheck is a comprehensive AI-powered medical assistant that helps users under
    pip install -r requirements.txt
    ```
 
-3. **Set up environment variables**
+3. **Set up Supabase Database**
+   
+   a. **Create a Supabase project**:
+   - Go to [supabase.com](https://supabase.com) and create a new project
+   - Note down your project URL and anon key
+   
+   b. **Set up the database schema**:
+   - Go to your Supabase project dashboard
+   - Navigate to the SQL Editor
+   - Run the SQL commands from `supabase_schema.sql`
+   
+   c. **Configure environment variables**:
    Create a `.env` file in the root directory:
    ```env
    OPENROUTER_API_KEY=your_openrouter_api_key_here
    SECRET_KEY=your_secret_key_here
+   SUPABASE_URL=your_supabase_project_url_here
+   SUPABASE_ANON_KEY=your_supabase_anon_key_here
    ```
 
 4. **Optional: Add custom symptom model**
@@ -93,6 +114,23 @@ MediCheck is a comprehensive AI-powered medical assistant that helps users under
 1. **Sign Up**: Create a new account with your email and password
 2. **Login**: Sign in to access your personalized dashboard
 3. **Explore Features**: Use the sidebar to navigate between different features
+
+### Using Appointment Booking
+1. **Manual Booking**:
+   - Navigate to "Book Appointment Details" in the sidebar
+   - Fill out the appointment form with doctor name, specialty, date, time, and reason
+   - Click "Check Availability" to see available time slots
+   - Click "Book Appointment" to confirm your booking
+   
+2. **Chatbot Booking**:
+   - Click the chatbot icon (🤖) in the bottom right corner
+   - Type or say: "I want to book an appointment with Dr. Smith for Cardiology on 2024-01-15 at 10:00 for chest pain"
+   - The chatbot will automatically parse your request and book the appointment
+   
+3. **Managing Appointments**:
+   - View all your appointments in the appointments section
+   - Edit or delete appointments as needed
+   - Check appointment status and details
 
 ### Using the Symptom Scanner
 1. **Navigate to Symptom Scanner**: Click on "Symptom Scanner" in the sidebar

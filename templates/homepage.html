@@ -185,6 +185,264 @@
             margin-bottom: 15px;
         }
 
+        /* Appointment Booking Styles */
+        .appointments-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .booking-section, .appointments-list-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .booking-section h2, .appointments-list-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .appointment-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn-primary, .btn-secondary {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-secondary {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .btn-secondary:hover {
+            background: #d5dbdb;
+        }
+
+        .appointments-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .appointment-card {
+            background: #f8f9fa;
+            border: 1px solid #e1e8ed;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .appointment-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .appointment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .appointment-title {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+
+        .appointment-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-scheduled {
+            background: #e8f5e8;
+            color: #27ae60;
+        }
+
+        .status-completed {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .status-cancelled {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .appointment-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .appointment-detail {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .appointment-detail label {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            margin-bottom: 2px;
+        }
+
+        .appointment-detail span {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .appointment-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-edit, .btn-delete {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-edit {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #2980b9;
+        }
+
+        .btn-delete {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #c0392b;
+        }
+
+        .loading {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 20px;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #d32f2f;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .success-message {
+            background: #e8f5e8;
+            color: #27ae60;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .chatbot-modal {
+                width: 90%;
+                right: 5%;
+                left: 5%;
+            }
+            .appointments-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .appointment-details {
+                grid-template-columns: 1fr;
+            }
+        }
+
         /* Chatbot Icon */
         .chatbot-icon {
             position: fixed;
@@ -751,12 +1009,6 @@
                     </a>
                 </li>
                 <li>
-                    <a href="#" class="nav-link" data-section="chatbot">
-                        <span class="icon">🤖</span>
-                        <span class="nav-text">ChatBot</span>
-                    </a>
-                </li>
-                <li>
                     <a href="#" class="nav-link" data-section="appointments">
                         <span class="icon">📅</span>
                         <span class="nav-text">Book Appointment Details</span>
@@ -772,12 +1024,6 @@
                     <a href="#" class="nav-link" data-section="report-analysis">
                         <span class="icon">📊</span>
                         <span class="nav-text">Report Analysis</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="nav-link" data-section="exercise">
-                        <span class="icon">💪</span>
-                        <span class="nav-text">Exercise & Home Diet Planner</span>
                     </a>
                 </li>
                 <li>
@@ -863,23 +1109,62 @@
             </div>
 
             <!-- Other sections will be added here -->
-            <div id="chatbot-section" class="content-section" style="display: none;">
-                <div class="content-header">
-                    <h1>🤖 AI ChatBot</h1>
-                    <p>Ask me anything about your health and medical concerns.</p>
-                </div>
-                <div style="text-align: center; padding: 50px;">
-                    <p>ChatBot functionality will be implemented here.</p>
-                </div>
-            </div>
-
             <div id="appointments-section" class="content-section" style="display: none;">
                 <div class="content-header">
                     <h1>📅 Book Appointment Details</h1>
                     <p>Schedule and manage your medical appointments.</p>
                 </div>
-                <div style="text-align: center; padding: 50px;">
-                    <p>Appointment booking functionality will be implemented here.</p>
+                
+                <div class="appointments-container">
+                    <!-- Appointment Booking Form -->
+                    <div class="booking-section">
+                        <h2>📝 Book New Appointment</h2>
+                        <form id="appointmentForm" class="appointment-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="doctorName">Doctor's Name</label>
+                                    <input type="text" id="doctorName" name="doctorName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="specialty">Specialty</label>
+                                    <select id="specialty" name="specialty" required>
+                                        <option value="">Select Specialty</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="appointmentDate">Appointment Date</label>
+                                    <input type="date" id="appointmentDate" name="appointmentDate" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="appointmentTime">Appointment Time</label>
+                                    <select id="appointmentTime" name="appointmentTime" required>
+                                        <option value="">Select Time</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="reason">Reason for Visit</label>
+                                <textarea id="reason" name="reason" rows="3" required placeholder="Describe your symptoms or reason for the appointment..."></textarea>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="button" onclick="checkAvailability()" class="btn-secondary">Check Availability</button>
+                                <button type="submit" class="btn-primary">Book Appointment</button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Current Appointments -->
+                    <div class="appointments-list-section">
+                        <h2>📋 Your Appointments</h2>
+                        <div id="appointmentsList" class="appointments-list">
+                            <div class="loading">Loading appointments...</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -982,16 +1267,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <div id="exercise-section" class="content-section" style="display: none;">
-                <div class="content-header">
-                    <h1>💪 Exercise & Home Diet Planner</h1>
-                    <p>Get personalized exercise and diet recommendations.</p>
-                </div>
-                <div style="text-align: center; padding: 50px;">
-                    <p>Exercise and diet planning functionality will be implemented here.</p>
                 </div>
             </div>
 
@@ -1269,6 +1544,199 @@
             
             if (!modal.contains(event.target) && !chatbotIcon.contains(event.target)) {
                 modal.classList.remove('active');
+            }
+        });
+
+        // Appointment Booking functionality
+        let specialties = [];
+
+        // Load specialties when appointments section is shown
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSpecialties();
+            loadAppointments();
+        });
+
+        async function loadSpecialties() {
+            try {
+                const response = await fetch('/appointments/specialties');
+                const data = await response.json();
+                specialties = data.specialties;
+                
+                const specialtySelect = document.getElementById('specialty');
+                specialtySelect.innerHTML = '<option value="">Select Specialty</option>';
+                
+                specialties.forEach(specialty => {
+                    const option = document.createElement('option');
+                    option.value = specialty;
+                    option.textContent = specialty;
+                    specialtySelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading specialties:', error);
+            }
+        }
+
+        async function loadAppointments() {
+            const appointmentsList = document.getElementById('appointmentsList');
+            appointmentsList.innerHTML = '<div class="loading">Loading appointments...</div>';
+            
+            try {
+                const response = await fetch('/appointments');
+                const data = await response.json();
+                
+                if (data.appointments && data.appointments.length > 0) {
+                    displayAppointments(data.appointments);
+                } else {
+                    appointmentsList.innerHTML = '<div class="no-appointments">No appointments found.</div>';
+                }
+            } catch (error) {
+                console.error('Error loading appointments:', error);
+                appointmentsList.innerHTML = '<div class="error-message">Error loading appointments. Please try again.</div>';
+            }
+        }
+
+        function displayAppointments(appointments) {
+            const appointmentsList = document.getElementById('appointmentsList');
+            appointmentsList.innerHTML = '';
+            
+            appointments.forEach(appointment => {
+                const appointmentCard = document.createElement('div');
+                appointmentCard.className = 'appointment-card';
+                
+                const date = new Date(appointment.appointment_date);
+                const formattedDate = date.toLocaleDateString();
+                
+                appointmentCard.innerHTML = `
+                    <div class="appointment-header">
+                        <div class="appointment-title">${appointment.doctor_name} - ${appointment.specialty}</div>
+                        <div class="appointment-status status-${appointment.status}">${appointment.status}</div>
+                    </div>
+                    <div class="appointment-details">
+                        <div class="appointment-detail">
+                            <label>Date</label>
+                            <span>${formattedDate}</span>
+                        </div>
+                        <div class="appointment-detail">
+                            <label>Time</label>
+                            <span>${appointment.appointment_time}</span>
+                        </div>
+                        <div class="appointment-detail">
+                            <label>Reason</label>
+                            <span>${appointment.reason}</span>
+                        </div>
+                    </div>
+                    <div class="appointment-actions">
+                        <button class="btn-edit" onclick="editAppointment(${appointment.id})">Edit</button>
+                        <button class="btn-delete" onclick="deleteAppointment(${appointment.id})">Delete</button>
+                    </div>
+                `;
+                
+                appointmentsList.appendChild(appointmentCard);
+            });
+        }
+
+        async function checkAvailability() {
+            const date = document.getElementById('appointmentDate').value;
+            const specialty = document.getElementById('specialty').value;
+            
+            if (!date) {
+                alert('Please select a date first.');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/appointments/available-slots?date=${date}&specialty=${specialty}`);
+                const data = await response.json();
+                
+                const timeSelect = document.getElementById('appointmentTime');
+                timeSelect.innerHTML = '<option value="">Select Time</option>';
+                
+                if (data.slots && data.slots.length > 0) {
+                    data.slots.forEach(slot => {
+                        const option = document.createElement('option');
+                        option.value = slot.time;
+                        option.textContent = slot.time;
+                        timeSelect.appendChild(option);
+                    });
+                } else {
+                    timeSelect.innerHTML = '<option value="">No available slots</option>';
+                }
+            } catch (error) {
+                console.error('Error checking availability:', error);
+                alert('Error checking availability. Please try again.');
+            }
+        }
+
+        async function submitAppointment(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const appointmentData = {
+                doctor_name: formData.get('doctorName'),
+                specialty: formData.get('specialty'),
+                appointment_date: formData.get('appointmentDate'),
+                appointment_time: formData.get('appointmentTime'),
+                reason: formData.get('reason')
+            };
+            
+            try {
+                const response = await fetch('/appointments', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(appointmentData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Appointment booked successfully!');
+                    event.target.reset();
+                    loadAppointments();
+                } else {
+                    alert('Error booking appointment: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error booking appointment:', error);
+                alert('Error booking appointment. Please try again.');
+            }
+        }
+
+        async function deleteAppointment(appointmentId) {
+            if (!confirm('Are you sure you want to delete this appointment?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/appointments/${appointmentId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Appointment deleted successfully!');
+                    loadAppointments();
+                } else {
+                    alert('Error deleting appointment: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error deleting appointment:', error);
+                alert('Error deleting appointment. Please try again.');
+            }
+        }
+
+        async function editAppointment(appointmentId) {
+            // This would open a modal or form to edit the appointment
+            alert('Edit functionality will be implemented soon.');
+        }
+
+        // Add event listener for appointment form
+        document.addEventListener('DOMContentLoaded', function() {
+            const appointmentForm = document.getElementById('appointmentForm');
+            if (appointmentForm) {
+                appointmentForm.addEventListener('submit', submitAppointment);
             }
         });
 
