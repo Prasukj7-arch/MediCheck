@@ -381,6 +381,45 @@
             display: block;
         }
 
+        /* Follow-up Questions */
+        .follow-up-questions {
+            padding: 15px 20px;
+            border-top: 1px solid #e9ecef;
+            background: #f8f9fa;
+        }
+
+        .follow-up-questions h4 {
+            margin: 0 0 10px 0;
+            font-size: 0.9rem;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .question-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .follow-up-question-btn {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #bbdefb;
+            border-radius: 15px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            text-align: left;
+            transition: all 0.3s ease;
+            word-wrap: break-word;
+        }
+
+        .follow-up-question-btn:hover {
+            background: #bbdefb;
+            border-color: #90caf9;
+            transform: translateY(-1px);
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .sidebar {
@@ -986,6 +1025,11 @@
                 </div>
             </div>
         </div>
+        <div class="follow-up-questions" id="followUpQuestions" style="display: none;">
+            <h4>Suggested Questions:</h4>
+            <div class="question-buttons" id="questionButtons">
+            </div>
+        </div>
         <div class="chatbot-input">
             <input type="text" id="chatbotInput" placeholder="Type your message..." onkeypress="handleChatbotKeyPress(event)">
             <button class="voice-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Voice Input">
@@ -1040,6 +1084,7 @@
                     isRecording = true;
                     document.getElementById('voiceBtn').classList.add('recording');
                     document.getElementById('voiceStatus').classList.add('active');
+                    document.getElementById('voiceStatus').textContent = 'Listening...';
                 };
 
                 recognition.onresult = function(event) {
@@ -1055,6 +1100,17 @@
                     isRecording = false;
                     document.getElementById('voiceBtn').classList.remove('recording');
                     document.getElementById('voiceStatus').classList.remove('active');
+                    
+                    // Show error message
+                    if (event.error === 'no-speech') {
+                        alert('No speech detected. Please try again.');
+                    } else if (event.error === 'audio-capture') {
+                        alert('Microphone not found. Please check your microphone settings.');
+                    } else if (event.error === 'not-allowed') {
+                        alert('Microphone access denied. Please allow microphone access and try again.');
+                    } else {
+                        alert('Voice recognition error. Please try again.');
+                    }
                 };
 
                 recognition.onend = function() {
@@ -1064,19 +1120,28 @@
                 };
             } else {
                 console.log('Speech recognition not supported');
-                document.getElementById('voiceBtn').style.display = 'none';
+                const voiceBtn = document.getElementById('voiceBtn');
+                if (voiceBtn) {
+                    voiceBtn.style.display = 'none';
+                }
             }
         }
 
         function toggleVoiceInput() {
             if (!recognition) {
                 initSpeechRecognition();
+                return;
             }
 
             if (isRecording) {
                 recognition.stop();
             } else {
-                recognition.start();
+                try {
+                    recognition.start();
+                } catch (error) {
+                    console.error('Error starting speech recognition:', error);
+                    alert('Error starting voice recognition. Please try again.');
+                }
             }
         }
 
@@ -1109,6 +1174,9 @@
             addMessage(message, 'user');
             input.value = '';
             
+            // Hide any existing follow-up questions
+            document.getElementById('followUpQuestions').style.display = 'none';
+            
             // Show typing indicator
             const typingIndicator = addMessage('Typing...', 'bot');
             
@@ -1128,6 +1196,11 @@
                 
                 // Add bot response
                 addMessage(data.response, 'bot');
+                
+                // Show follow-up questions if available
+                if (data.follow_up_questions && data.follow_up_questions.length > 0) {
+                    showFollowUpQuestions(data.follow_up_questions);
+                }
             } catch (error) {
                 // Remove typing indicator
                 typingIndicator.remove();
@@ -1135,6 +1208,29 @@
                 // Add error message
                 addMessage('Sorry, I encountered an error. Please try again.', 'bot');
             }
+        }
+
+        function showFollowUpQuestions(questions) {
+            const followUpDiv = document.getElementById('followUpQuestions');
+            const questionButtons = document.getElementById('questionButtons');
+            
+            // Clear existing questions
+            questionButtons.innerHTML = '';
+            
+            // Add new questions
+            questions.forEach(question => {
+                const button = document.createElement('button');
+                button.className = 'follow-up-question-btn';
+                button.textContent = question;
+                button.onclick = () => {
+                    document.getElementById('chatbotInput').value = question;
+                    sendChatbotMessage();
+                    followUpDiv.style.display = 'none';
+                };
+                questionButtons.appendChild(button);
+            });
+            
+            followUpDiv.style.display = 'block';
         }
 
         function addMessage(content, sender) {

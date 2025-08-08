@@ -26,6 +26,13 @@ except ImportError:
     # If the module doesn't exist, we'll create a placeholder
     SymptomScanner = None
 
+# Import the medical chatbot
+try:
+    from backend.medical_chatbot import MedicalChatbot
+except ImportError:
+    # If the module doesn't exist, we'll create a placeholder
+    MedicalChatbot = None
+
 # Load environment variables
 load_dotenv()
 
@@ -337,6 +344,29 @@ if SymptomScanner:
 else:
     logger.warning("SymptomScanner module not available")
 
+# Initialize medical chatbot
+medical_chatbot = None
+if MedicalChatbot:
+    try:
+        # Initialize OpenAI client for LLM integration
+        openai_client = None
+        if os.getenv('OPENROUTER_API_KEY'):
+            openai_client = openai.OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=os.getenv('OPENROUTER_API_KEY')
+            )
+            logger.info("OpenAI client initialized for Medical Chatbot")
+        else:
+            logger.warning("OPENROUTER_API_KEY not found. Medical Chatbot features will be limited.")
+        
+        medical_chatbot = MedicalChatbot(openai_client)
+        logger.info("Medical Chatbot initialized successfully")
+    except Exception as e:
+        logger.error(f"Error initializing medical chatbot: {e}")
+        medical_chatbot = None
+else:
+    logger.warning("MedicalChatbot module not available")
+
 def allowed_file(filename):
     """Check if file extension is allowed"""
     return '.' in filename and \
@@ -499,7 +529,7 @@ def query():
 @app.route('/chatbot', methods=['POST'])
 @login_required
 def chatbot():
-    """Handle chatbot queries"""
+    """Handle chatbot queries with medical context and follow-up questions"""
     try:
         data = request.get_json()
         message = data.get('message', '').strip()
@@ -507,19 +537,35 @@ def chatbot():
         if not message:
             return jsonify({'error': 'No message provided'}), 400
         
-        # For now, use the same RAG system for chatbot
-        search_results = rag_system.search_similar_chunks(message, top_k=3)
-        
-        if search_results['documents'] and search_results['documents'][0]:
-            context_chunks = search_results['documents'][0]
-            response = rag_system.generate_response(message, context_chunks, 'patient')
+        # Use the medical chatbot if available
+        if medical_chatbot:
+            user_id = session.get('user_id', 'default_user')
+            result = medical_chatbot.generate_medical_response(user_id, message)
+            
+            return jsonify({
+                'response': result['response'],
+                'follow_up_questions': result['follow_up_questions'],
+                'message': message
+            })
         else:
-            response = "I'm here to help with your medical questions! Please ask me about your health, symptoms, medications, or any medical concerns you might have."
-        
-        return jsonify({
-            'response': response,
-            'message': message
-        })
+            # Fallback to the old RAG system
+            search_results = rag_system.search_similar_chunks(message, top_k=3)
+            
+            if search_results['documents'] and search_results['documents'][0]:
+                context_chunks = search_results['documents'][0]
+                response = rag_system.generate_response(message, context_chunks, 'patient')
+            else:
+                response = "I'm here to help with your medical questions! Please ask me about your health, symptoms, medications, or any medical concerns you might have."
+            
+            return jsonify({
+                'response': response,
+                'follow_up_questions': [
+                    "What health symptoms are you experiencing?",
+                    "Do you have any medical conditions I should know about?",
+                    "Are you currently taking any medications?"
+                ],
+                'message': message
+            })
     
     except Exception as e:
         logger.error(f"Error processing chatbot message: {e}")
@@ -538,7 +584,8 @@ def status():
             'embedding_model': 'all-MiniLM-L6-v2',
             'vector_db': 'ChromaDB',
             'llm_model': 'mistralai/mistral-7b-instruct',
-            'symptom_scanner': 'available' if symptom_scanner else 'not_available'
+            'symptom_scanner': 'available' if symptom_scanner else 'not_available',
+            'medical_chatbot': 'available' if medical_chatbot else 'not_available'
         })
     
     except Exception as e:

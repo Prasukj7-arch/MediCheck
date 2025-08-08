@@ -22,6 +22,9 @@ MediCheck is a comprehensive AI-powered medical assistant that helps users under
 - **Text Chat**: Type questions and get instant responses
 - **Voice Input**: Speak to the chatbot using voice recognition
 - **Medical Expertise**: Specialized in medical and health-related queries
+- **Conversation Context**: Maintains conversation history for personalized responses
+- **Follow-up Questions**: Generates relevant follow-up questions to better understand your situation
+- **Medical Filtering**: Only responds to health-related questions
 - **24/7 Availability**: Always available for your health concerns
 
 ### 🔍 Symptom Scanner
@@ -104,15 +107,53 @@ MediCheck is a comprehensive AI-powered medical assistant that helps users under
 6. **Medical Relevance**: The system automatically identifies if the image is medically relevant
 
 ### Using the ChatBot
-1. **Text Chat**: Click the chatbot icon in the bottom right corner
-2. **Voice Input**: Click the microphone button to speak your question
-3. **Ask Questions**: Ask about symptoms, medications, health concerns, etc.
+1. **Access ChatBot**: Click the chatbot icon (🤖) in the bottom right corner
+2. **Text Input**: Type your medical questions in the input field
+3. **Voice Input**: Click the microphone button (🎤) to speak your question
+   - Allow microphone access when prompted
+   - Speak clearly for better recognition
+   - Click the microphone again to stop recording
+4. **Medical Questions**: Ask about:
+   - Symptoms and conditions
+   - Medications and treatments
+   - Medical tests and procedures
+   - Health concerns and advice
+5. **Conversation Context**: The chatbot remembers your conversation history
+6. **Follow-up Questions**: Click on suggested questions to continue the conversation
+7. **Medical Focus**: Only health-related questions are accepted
 
 ### Medical Report Analysis
 1. **Upload Report**: Go to Report Analysis section
 2. **Choose Perspective**: Select Patient or Doctor view
 3. **Ask Questions**: Get detailed analysis and explanations
 4. **Get Insights**: Understand your medical reports better
+
+## Testing
+
+### Medical Chatbot Testing
+Run the medical chatbot test to verify functionality:
+```bash
+python test_medical_chatbot.py
+```
+
+This test will:
+- Check if the application is running
+- Verify medical chatbot status
+- Test conversation context and follow-up questions
+- Validate medical query filtering
+- Test voice input functionality (requires manual testing in browser)
+
+### Symptom Scanner Testing
+Test the symptom scanner functionality:
+```bash
+python test_llm_integration.py
+```
+
+### Vision Models Testing
+Check available vision models for image analysis:
+```bash
+python test_vision_models.py
+```
 
 ## Technical Details
 
