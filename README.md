@@ -1,179 +1,157 @@
-# Medical Report RAG Extractor
+# MediCheck - AI-Powered Medical Assistant
 
-A complete web-based application that uses Retrieval-Augmented Generation (RAG) to analyze medical reports and provide expert insights in response to user queries.
+MediCheck is a comprehensive AI-powered medical assistant that helps users understand medical reports, get health insights, and manage their healthcare needs.
 
-## 🏥 Features
+## Features
 
-- **PDF Processing**: Upload and extract text from medical report PDFs
-- **Semantic Chunking**: Intelligently split documents into meaningful segments
-- **Vector Embeddings**: Create embeddings using sentence-transformers
-- **Vector Database**: Store and retrieve relevant chunks using ChromaDB
-- **AI-Powered Analysis**: Generate expert insights using Mistral-7B-Instruct via OpenRouter
-- **Modern Web Interface**: Beautiful, responsive frontend with drag-and-drop upload
+### 🔐 Authentication System
+- **User Registration**: Create new accounts with email and password
+- **User Login**: Secure login with session management
+- **User Dashboard**: Personalized homepage with user information
 
-## 🚀 Quick Start
+### 🏠 Homepage with Sidebar Navigation
+- **Dashboard**: Overview of all available features
+- **ChatBot**: AI-powered medical assistant with voice input
+- **Book Appointment Details**: Schedule and manage medical appointments
+- **Symptom Scanner**: Upload images or use live camera for symptom analysis
+- **Report Analysis**: Upload and analyze medical reports with AI
+- **Exercise & Home Diet Planner**: Get personalized health recommendations
+- **SOS**: Emergency services and critical health information
 
-### Prerequisites
+### 🤖 AI ChatBot with Voice Input
+- **Text Chat**: Type questions and get instant responses
+- **Voice Input**: Speak to the chatbot using voice recognition
+- **Medical Expertise**: Specialized in medical and health-related queries
+- **24/7 Availability**: Always available for your health concerns
 
-- Python 3.8 or higher
-- OpenRouter API key (free tier available)
+### 🔍 Symptom Scanner
+- **Image Upload**: Upload images from your device for analysis
+- **Live Camera**: Use your camera for real-time symptom scanning
+- **AI Analysis**: Powered by PyTorch models for accurate diagnosis
+- **Condition Information**: Detailed information about detected conditions
+- **Confidence Scores**: Get confidence levels for predictions
+- **Top Predictions**: View multiple possible conditions with probabilities
+- **Medical Recommendations**: Get advice and next steps for detected conditions
 
-### Installation
+### 📊 Medical Report Analysis
+- **PDF Upload**: Drag and drop or browse to upload medical reports
+- **AI Analysis**: Get detailed insights and explanations
+- **Dual Perspectives**: 
+  - **Patient View**: Easy-to-understand explanations in simple terms
+  - **Doctor View**: Professional medical analysis with clinical terminology
+- **Interactive Queries**: Ask specific questions about your reports
+- **Normal Answers**: Conversational responses instead of formal letter format
 
-1. **Clone or download the project files**
+## Installation
 
-2. **Install dependencies**:
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd MediCheck
+   ```
+
+2. **Install Python dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Set up your API key**:
-   - Get a free API key from [OpenRouter](https://openrouter.ai/)
-   - Create a `.env` file in the project root:
-   ```bash
-   OPENROUTER_API_KEY=your_api_key_here
+3. **Set up environment variables**
+   Create a `.env` file in the root directory:
+   ```env
+   OPENROUTER_API_KEY=your_openrouter_api_key_here
+   SECRET_KEY=your_secret_key_here
    ```
 
-4. **Run the application**:
+4. **Optional: Add custom symptom model**
+   Place your `.pt` model file in one of these locations:
+   - `models/symptom_model.pt`
+   - `backend/models/symptom_model.pt`
+   - `symptom_model.pt` (root directory)
+
+5. **Run the application**
    ```bash
    python app.py
    ```
 
-5. **Open your browser** and go to `http://localhost:5000`
+6. **Access the application**
+   Open your browser and go to `http://localhost:5000`
 
-## 📋 Usage
+## Usage
 
-### 1. Upload Medical Report
-- Drag and drop a PDF file or click "Choose PDF File"
-- The system will automatically:
-  - Extract text from the PDF
-  - Split it into semantic chunks
-  - Create vector embeddings
-  - Store in the vector database
+### Getting Started
+1. **Sign Up**: Create a new account with your email and password
+2. **Login**: Sign in to access your personalized dashboard
+3. **Explore Features**: Use the sidebar to navigate between different features
 
-### 2. Ask Questions
-- Type your question in the text area
-- Click "Ask Question" or press Enter
-- Get AI-powered insights based on the uploaded report
+### Using the Symptom Scanner
+1. **Navigate to Symptom Scanner**: Click on "Symptom Scanner" in the sidebar
+2. **Choose Input Method**:
+   - **Upload Image**: Click "Upload Image" and select an image file
+   - **Live Camera**: Click "Live Camera" and use your device's camera
+3. **Analyze Symptoms**: The AI will analyze the image and provide results
+4. **View Results**: See the detected condition, confidence score, and recommendations
+5. **Get Information**: Read detailed information about the detected condition
 
-### Example Questions:
-- "What are the main findings in this medical report?"
-- "What medications were prescribed to the patient?"
-- "What are the patient's vital signs and lab results?"
-- "Are there any abnormal or concerning results?"
-- "What is the diagnosis and recommended treatment plan?"
+### Using the ChatBot
+1. **Text Chat**: Click the chatbot icon in the bottom right corner
+2. **Voice Input**: Click the microphone button to speak your question
+3. **Ask Questions**: Ask about symptoms, medications, health concerns, etc.
 
-## 🏗️ Architecture
+### Medical Report Analysis
+1. **Upload Report**: Go to Report Analysis section
+2. **Choose Perspective**: Select Patient or Doctor view
+3. **Ask Questions**: Get detailed analysis and explanations
+4. **Get Insights**: Understand your medical reports better
 
-### RAG Pipeline Components:
+## Technical Details
 
-1. **Data Ingestion**:
-   - PDF text extraction using PyPDF2
-   - Semantic chunking with overlap
-   - Vector embedding creation using sentence-transformers
-
-2. **Vector Storage**:
-   - ChromaDB for efficient similarity search
-   - Cosine similarity for retrieval
-   - Persistent storage with metadata
-
-3. **Retrieval**:
-   - Query embedding generation
-   - Top-k similarity search
-   - Context chunk selection
-
-4. **Generation**:
-   - Prompt engineering for medical expertise
-   - Mistral-7B-Instruct model via OpenRouter
-   - Professional medical response generation
-
-## 🔧 Technical Details
-
-### Backend (Flask)
-- **Framework**: Flask with CORS support
-- **PDF Processing**: PyPDF2 for text extraction
-- **Embeddings**: sentence-transformers (all-MiniLM-L6-v2)
-- **Vector DB**: ChromaDB with DuckDB backend
-- **LLM**: Mistral-7B-Instruct via OpenRouter API
+### Backend
+- **Framework**: Flask (Python)
+- **Database**: ChromaDB for vector storage
+- **AI Models**: 
+  - Sentence Transformers for embeddings
+  - Mistral-7B-Instruct for text generation
+  - PyTorch models for symptom analysis
+- **Authentication**: Session-based with password hashing
+- **Image Processing**: OpenCV and PIL for image handling
 
 ### Frontend
-- **HTML5/CSS3**: Modern, responsive design
-- **JavaScript**: Vanilla JS for interactivity
-- **Features**: Drag-and-drop upload, real-time status, example queries
+- **HTML/CSS/JavaScript**: Modern, responsive design
+- **Voice Recognition**: Web Speech API
+- **Real-time Chat**: AJAX-based communication
+- **Drag & Drop**: File upload functionality
+- **Camera Integration**: Live camera capture and processing
+- **Image Preview**: Real-time image preview and analysis
 
-### API Endpoints
-- `GET /`: Main application page
-- `POST /upload`: PDF file upload and processing
-- `POST /query`: Query processing and response generation
-- `GET /status`: System health check
+### AI Features
+- **RAG System**: Retrieval-Augmented Generation for medical reports
+- **Vector Search**: Semantic search through medical documents
+- **Context-Aware Responses**: Tailored responses based on uploaded reports
+- **Symptom Analysis**: AI-powered image analysis for symptom detection
+- **Condition Classification**: Multi-class classification for various medical conditions
 
-## 📁 Project Structure
+## Security Features
 
-```
-medical-report-rag/
-├── app.py                 # Main Flask application
-├── requirements.txt       # Python dependencies
-├── README.md             # This file
-├── env_example.txt       # Environment variables template
-├── templates/
-│   └── index.html        # Frontend interface
-├── uploads/              # Upload directory (auto-created)
-└── chroma_db/           # Vector database storage (auto-created)
-```
+- **Password Hashing**: Secure password storage using Werkzeug
+- **Session Management**: Secure user sessions
+- **Input Validation**: Proper validation of user inputs
+- **File Upload Security**: Secure PDF file handling
 
-## 🔒 Security & Privacy
+## Browser Compatibility
 
-- **Local Processing**: All PDF processing happens locally
-- **No Data Persistence**: Uploaded files are not permanently stored
-- **API Key Security**: Use environment variables for API keys
-- **Input Validation**: File type and size restrictions
+- **Chrome**: Full support (including voice recognition)
+- **Firefox**: Full support
+- **Safari**: Full support
+- **Edge**: Full support
 
-## 🛠️ Configuration
+## Voice Recognition Support
 
-### Environment Variables
-- `OPENROUTER_API_KEY`: Your OpenRouter API key
+The chatbot's voice input feature requires:
+- **HTTPS**: For production deployment (required by Web Speech API)
+- **Modern Browser**: Chrome, Firefox, Safari, or Edge
+- **Microphone Permission**: User must allow microphone access
 
-### Customization Options
-- **Chunk Size**: Modify `chunk_size` parameter in `chunk_text()` method
-- **Overlap**: Adjust `overlap` parameter for chunk overlap
-- **Top-k Retrieval**: Change `top_k` parameter in search functions
-- **Model**: Switch to different models via OpenRouter
-
-## 🚨 Troubleshooting
-
-### Common Issues:
-
-1. **"No module named 'sentence_transformers'"**
-   - Run: `pip install -r requirements.txt`
-
-2. **"OpenRouter API key not found"**
-   - Create `.env` file with your API key
-   - Get free API key from https://openrouter.ai/
-
-3. **"PDF text extraction failed"**
-   - Ensure PDF contains extractable text (not just images)
-   - Try a different PDF file
-
-4. **"No relevant information found"**
-   - Upload a medical report first
-   - Try different question phrasing
-
-### Performance Tips:
-- Use smaller chunk sizes for detailed analysis
-- Increase overlap for better context preservation
-- Adjust top-k retrieval based on document size
-
-## 📈 Future Enhancements
-
-- [ ] Support for multiple file formats (DOCX, TXT)
-- [ ] Batch processing for multiple reports
-- [ ] Export functionality for analysis results
-- [ ] User authentication and session management
-- [ ] Advanced medical terminology recognition
-- [ ] Integration with medical databases
-- [ ] Real-time collaboration features
-
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -181,14 +159,17 @@ medical-report-rag/
 4. Test thoroughly
 5. Submit a pull request
 
-## 📄 License
+## License
 
-This project is open source and available under the MIT License.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## ⚠️ Disclaimer
+## Support
 
-This application is for educational and research purposes. It should not be used for actual medical diagnosis or treatment decisions. Always consult with qualified healthcare professionals for medical advice.
+For support and questions:
+- Create an issue in the repository
+- Contact the development team
+- Check the documentation
 
----
+## Disclaimer
 
-**Built with ❤️ for the medical AI community**
+This application is for educational and informational purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment. Always consult with qualified healthcare providers for medical concerns.

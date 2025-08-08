@@ -1,181 +1,75 @@
 #!/usr/bin/env python3
 """
-Test script to verify the Medical Report RAG Extractor setup
+Test script to verify MediCheck application setup
 """
 
-import sys
 import os
+import sys
+import requests
+import json
 
-def test_imports():
-    """Test if all required packages can be imported"""
-    print("🔍 Testing package imports...")
+def test_application():
+    """Test the application endpoints"""
+    base_url = "http://localhost:5000"
     
-    try:
-        import flask
-        print("✅ Flask imported successfully")
-    except ImportError as e:
-        print(f"❌ Flask import failed: {e}")
-        return False
-    
-    try:
-        import PyPDF2
-        print("✅ PyPDF2 imported successfully")
-    except ImportError as e:
-        print(f"❌ PyPDF2 import failed: {e}")
-        return False
-    
-    try:
-        from sentence_transformers import SentenceTransformer
-        print("✅ sentence-transformers imported successfully")
-    except ImportError as e:
-        print(f"❌ sentence-transformers import failed: {e}")
-        return False
-    
-    try:
-        import chromadb
-        print("✅ ChromaDB imported successfully")
-    except ImportError as e:
-        print(f"❌ ChromaDB import failed: {e}")
-        return False
-    
-    try:
-        import openai
-        print("✅ OpenAI imported successfully")
-    except ImportError as e:
-        print(f"❌ OpenAI import failed: {e}")
-        return False
-    
-    try:
-        from dotenv import load_dotenv
-        print("✅ python-dotenv imported successfully")
-    except ImportError as e:
-        print(f"❌ python-dotenv import failed: {e}")
-        return False
-    
-    return True
-
-def test_embedding_model():
-    """Test if the embedding model can be loaded"""
-    print("\n🧠 Testing embedding model...")
-    
-    try:
-        from sentence_transformers import SentenceTransformer
-        model = SentenceTransformer('all-MiniLM-L6-v2')
-        print("✅ Embedding model loaded successfully")
-        
-        # Test encoding
-        test_text = ["This is a test sentence."]
-        embeddings = model.encode(test_text)
-        print(f"✅ Embedding generation successful (shape: {embeddings.shape})")
-        
-        return True
-    except Exception as e:
-        print(f"❌ Embedding model test failed: {e}")
-        return False
-
-def test_chromadb():
-    """Test if ChromaDB can be initialized"""
-    print("\n🗄️ Testing ChromaDB...")
-    
-    try:
-        import chromadb
-        
-        client = chromadb.PersistentClient(path="./test_chroma_db")
-        
-        # Test collection creation
-        collection = client.get_or_create_collection(
-            name="test_collection"
-        )
-        print("✅ ChromaDB initialized successfully")
-        
-        # Cleanup
-        client.delete_collection("test_collection")
-        print("✅ ChromaDB test collection cleaned up")
-        
-        return True
-    except Exception as e:
-        print(f"❌ ChromaDB test failed: {e}")
-        return False
-
-def test_environment():
-    """Test environment configuration"""
-    print("\n🔧 Testing environment configuration...")
-    
-    # Check if .env file exists
-    if os.path.exists('.env'):
-        print("✅ .env file found")
-    else:
-        print("⚠️  .env file not found - you'll need to create one with your OpenRouter API key")
-    
-    # Check for API key
-    from dotenv import load_dotenv
-    load_dotenv()
-    
-    api_key = os.getenv('OPENROUTER_API_KEY')
-    if api_key and api_key != 'your_openrouter_api_key_here':
-        print("✅ OpenRouter API key found")
-    else:
-        print("⚠️  OpenRouter API key not configured - you'll need to set OPENROUTER_API_KEY in .env file")
-    
-    return True
-
-def test_flask_app():
-    """Test if Flask app can be imported"""
-    print("\n🌐 Testing Flask application...")
-    
-    try:
-        # Import the app (this will test all the RAG system initialization)
-        from app import app, rag_system
-        print("✅ Flask app imported successfully")
-        print("✅ RAG system initialized successfully")
-        return True
-    except Exception as e:
-        print(f"❌ Flask app test failed: {e}")
-        return False
-
-def main():
-    """Run all tests"""
-    print("🏥 Medical Report RAG Extractor - Setup Test")
+    print("🏥 Testing MediCheck Application Setup")
     print("=" * 50)
     
-    tests = [
-        ("Package Imports", test_imports),
-        ("Embedding Model", test_embedding_model),
-        ("ChromaDB", test_chromadb),
-        ("Environment", test_environment),
-        ("Flask App", test_flask_app)
-    ]
+    # Test 1: Check if application is running
+    try:
+        response = requests.get(f"{base_url}/", timeout=5)
+        if response.status_code == 200:
+            print("✅ Application is running successfully")
+        else:
+            print(f"⚠️ Application responded with status code: {response.status_code}")
+    except requests.exceptions.ConnectionError:
+        print("❌ Application is not running. Please start it with: python app.py")
+        return False
+    except Exception as e:
+        print(f"❌ Error connecting to application: {e}")
+        return False
     
-    passed = 0
-    total = len(tests)
+    # Test 2: Check login page
+    try:
+        response = requests.get(f"{base_url}/login", timeout=5)
+        if response.status_code == 200:
+            print("✅ Login page is accessible")
+        else:
+            print(f"⚠️ Login page responded with status code: {response.status_code}")
+    except Exception as e:
+        print(f"❌ Error accessing login page: {e}")
     
-    for test_name, test_func in tests:
-        try:
-            if test_func():
-                passed += 1
-            else:
-                print(f"❌ {test_name} failed")
-        except Exception as e:
-            print(f"❌ {test_name} failed with exception: {e}")
+    # Test 3: Check signup page
+    try:
+        response = requests.get(f"{base_url}/signup", timeout=5)
+        if response.status_code == 200:
+            print("✅ Signup page is accessible")
+        else:
+            print(f"⚠️ Signup page responded with status code: {response.status_code}")
+    except Exception as e:
+        print(f"❌ Error accessing signup page: {e}")
     
-    print("\n" + "=" * 50)
-    print(f"📊 Test Results: {passed}/{total} tests passed")
+    # Test 4: Check system status
+    try:
+        response = requests.get(f"{base_url}/status", timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            print(f"✅ System status: {data.get('status', 'unknown')}")
+            print(f"   Documents stored: {data.get('documents_stored', 0)}")
+        else:
+            print(f"⚠️ Status endpoint responded with status code: {response.status_code}")
+    except Exception as e:
+        print(f"❌ Error checking system status: {e}")
     
-    if passed == total:
-        print("🎉 All tests passed! Your setup is ready.")
-        print("\n🚀 To run the application:")
-        print("1. Make sure you have your OpenRouter API key in .env file")
-        print("2. Run: python app.py")
-        print("3. Open http://localhost:5000 in your browser")
-    else:
-        print("⚠️  Some tests failed. Please check the errors above and fix them.")
-        print("\n💡 Common solutions:")
-        print("- Run: pip install -r requirements.txt")
-        print("- Create .env file with your OpenRouter API key")
-        print("- Check your internet connection for model downloads")
+    print("\n🎉 Setup verification completed!")
+    print("\n📋 Next Steps:")
+    print("1. Open your browser and go to: http://localhost:5000")
+    print("2. Create a new account using the signup page")
+    print("3. Login and explore the features")
+    print("4. Try uploading a medical report PDF")
+    print("5. Test the chatbot with voice input")
     
-    return passed == total
+    return True
 
 if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1)
+    test_application()

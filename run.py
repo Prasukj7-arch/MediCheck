@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Startup script for Medical Report RAG Extractor
+MediCheck Application Startup Script
 """
 
 import os
@@ -8,24 +8,19 @@ import sys
 import subprocess
 from pathlib import Path
 
-def check_python_version():
-    """Check if Python version is compatible"""
-    if sys.version_info < (3, 8):
-        print("❌ Python 3.8 or higher is required")
-        print(f"Current version: {sys.version}")
-        return False
-    print(f"✅ Python version: {sys.version.split()[0]}")
-    return True
-
 def check_dependencies():
-    """Check if required packages are installed"""
+    """Check if all required dependencies are installed"""
     required_packages = [
         'flask',
-        'PyPDF2', 
-        'sentence_transformers',
+        'flask-cors',
+        'PyPDF2',
+        'sentence-transformers',
         'chromadb',
         'openai',
-        'python-dotenv'
+        'python-dotenv',
+        'numpy',
+        'requests',
+        'werkzeug'
     ]
     
     missing_packages = []
@@ -33,92 +28,67 @@ def check_dependencies():
     for package in required_packages:
         try:
             __import__(package.replace('-', '_'))
-            print(f"✅ {package}")
         except ImportError:
-            print(f"❌ {package} - not installed")
             missing_packages.append(package)
     
     if missing_packages:
-        print(f"\n📦 Installing missing packages: {', '.join(missing_packages)}")
-        try:
-            subprocess.check_call([sys.executable, '-m', 'pip', 'install'] + missing_packages)
-            print("✅ Dependencies installed successfully")
-        except subprocess.CalledProcessError:
-            print("❌ Failed to install dependencies")
-            print("Please run: pip install -r requirements.txt")
-            return False
+        print("❌ Missing required packages:")
+        for package in missing_packages:
+            print(f"   - {package}")
+        print("\n💡 Install missing packages with:")
+        print("   pip install -r requirements.txt")
+        return False
     
     return True
 
-def check_env_file():
-    """Check if .env file exists and has API key"""
+def check_environment():
+    """Check environment configuration"""
     env_file = Path('.env')
     
     if not env_file.exists():
         print("⚠️  .env file not found")
-        print("Creating .env file template...")
+        print("💡 Creating .env file with default values...")
         
-        # Copy from env_example.txt if it exists
-        example_file = Path('env_example.txt')
-        if example_file.exists():
-            with open(example_file, 'r') as f:
-                content = f.read()
-            
-            with open(env_file, 'w') as f:
-                f.write(content)
-            
-            print("✅ Created .env file from template")
-            print("⚠️  Please edit .env file and add your OpenRouter API key")
-        else:
-            # Create basic .env file
-            with open(env_file, 'w') as f:
-                f.write("# OpenRouter API Key\n")
-                f.write("# Get your API key from https://openrouter.ai/\n")
-                f.write("OPENROUTER_API_KEY=your_openrouter_api_key_here\n")
-            
-            print("✅ Created .env file")
-            print("⚠️  Please edit .env file and add your OpenRouter API key")
+        with open('.env', 'w') as f:
+            f.write("# MediCheck Environment Variables\n")
+            f.write("# Get your API key from: https://openrouter.ai/\n")
+            f.write("OPENROUTER_API_KEY=your_openrouter_api_key_here\n")
+            f.write("SECRET_KEY=your-secret-key-change-this-in-production\n")
         
+        print("✅ .env file created")
+        print("⚠️  Please update the .env file with your actual API keys")
         return False
     
-    # Check if API key is set
-    from dotenv import load_dotenv
-    load_dotenv()
-    
-    api_key = os.getenv('OPENROUTER_API_KEY')
-    if not api_key or api_key == 'your_openrouter_api_key_here':
-        print("⚠️  OpenRouter API key not configured")
-        print("Please edit .env file and set your OPENROUTER_API_KEY")
-        return False
-    
-    print("✅ OpenRouter API key configured")
     return True
 
 def main():
     """Main startup function"""
-    print("🏥 Medical Report RAG Extractor")
-    print("=" * 40)
+    print("🏥 MediCheck - AI-Powered Medical Assistant")
+    print("=" * 50)
     
-    # Check Python version
-    if not check_python_version():
-        return False
-    
-    print("\n🔍 Checking dependencies...")
+    # Check dependencies
+    print("🔍 Checking dependencies...")
     if not check_dependencies():
-        return False
+        sys.exit(1)
+    print("✅ All dependencies found")
     
-    print("\n🔧 Checking configuration...")
-    if not check_env_file():
-        print("\n📝 Setup Instructions:")
-        print("1. Get a free API key from https://openrouter.ai/")
-        print("2. Edit the .env file and replace 'your_openrouter_api_key_here' with your actual API key")
-        print("3. Run this script again")
-        return False
+    # Check environment
+    print("🔍 Checking environment...")
+    if not check_environment():
+        print("⚠️  Please configure your .env file before continuing")
+        print("   You can still run the application, but some features may not work")
     
-    print("\n🚀 Starting application...")
-    print("The application will be available at: http://localhost:5000")
-    print("Press Ctrl+C to stop the server")
-    print("-" * 40)
+    # Create necessary directories
+    print("🔍 Creating necessary directories...")
+    os.makedirs('uploads', exist_ok=True)
+    os.makedirs('chroma_db', exist_ok=True)
+    print("✅ Directories created")
+    
+    # Start the application
+    print("\n🚀 Starting MediCheck application...")
+    print("📱 Open your browser and go to: http://localhost:5000")
+    print("🛑 Press Ctrl+C to stop the application")
+    print("=" * 50)
     
     try:
         # Import and run the Flask app
@@ -128,10 +98,7 @@ def main():
         print("\n👋 Application stopped by user")
     except Exception as e:
         print(f"\n❌ Error starting application: {e}")
-        return False
-    
-    return True
+        sys.exit(1)
 
 if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1)
+    main()

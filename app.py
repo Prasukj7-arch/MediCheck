@@ -1,9 +1,10 @@
 import os
 import json
 import logging
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for, flash
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 import PyPDF2
 import io
 import re
@@ -13,6 +14,17 @@ import openai
 from dotenv import load_dotenv
 import numpy as np
 import requests
+from functools import wraps
+import cv2
+from PIL import Image
+import base64
+
+# Import the symptom scanner
+try:
+    from backend.symptom_scanner import SymptomScanner
+except ImportError:
+    # If the module doesn't exist, we'll create a placeholder
+    SymptomScanner = None
 
 # Load environment variables
 load_dotenv()
@@ -31,9 +43,21 @@ MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-change-this')
 
 # Create uploads directory if it doesn't exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Simple user storage (in production, use a proper database)
+users = {}
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Initialize components
 class MedicalRAGSystem:
@@ -205,45 +229,45 @@ class MedicalRAGSystem:
             # First check if the query is medical-related
             if not self.is_medical_query(query):
                 if perspective == 'patient':
-                    return "I apologize, but I can only answer questions related to medical reports and health information. Please ask me about your medical report, test results, medications, symptoms, or other health-related topics. For non-medical questions, I recommend consulting other appropriate resources."
+                    return "I can only answer questions related to medical reports and health information. Please ask me about your medical report, test results, medications, symptoms, or other health-related topics."
                 else:
-                    return "I apologize, but I can only provide clinical analysis for medical-related queries. Please ask me about medical reports, clinical findings, diagnoses, treatments, or other healthcare-related topics. For non-medical questions, I recommend consulting other appropriate resources."
+                    return "I can only provide clinical analysis for medical-related queries. Please ask me about medical reports, clinical findings, diagnoses, treatments, or other healthcare-related topics."
             
             # Combine context chunks
             context = "\n\n".join(context_chunks)
             
             if perspective == 'patient':
-                # Patient-friendly prompt
-                prompt = f"""You are a compassionate medical expert helping a patient understand their medical report. 
+                # Patient-friendly prompt - normal conversational style
+                prompt = f"""You are a helpful medical assistant helping a patient understand their medical report. 
                 
                 Medical Report Context:
                 {context}
                 
                 Patient Question: {query}
                 
-                Please provide a clear, easy-to-understand response that:
-                1. Uses simple, non-medical language when possible
+                Please provide a clear, conversational response that:
+                1. Uses simple, everyday language
                 2. Explains medical terms in plain English
-                3. Is reassuring but honest about any concerns
-                4. Provides practical advice for the patient
+                3. Is helpful and informative
+                4. Gives practical advice when relevant
                 5. Encourages them to ask their doctor if they have concerns
                 
-                Remember: The patient may be anxious about their health, so be supportive and clear.
+                Write in a normal, conversational tone - not like a formal letter. Be direct and helpful.
                 
                 Response:"""
                 
-                system_message = "You are a caring medical expert who helps patients understand their health information in simple, reassuring terms."
+                system_message = "You are a helpful medical assistant who explains health information in simple, conversational terms."
                 
             else:
-                # Doctor/clinical prompt
-                prompt = f"""You are a senior medical expert analyzing a medical report for clinical decision-making. 
+                # Doctor/clinical prompt - professional but not overly formal
+                prompt = f"""You are a medical expert analyzing a medical report for clinical decision-making. 
                 
                 Medical Report Context:
                 {context}
                 
                 Clinical Question: {query}
                 
-                Please provide a detailed, professional clinical response that includes:
+                Please provide a detailed, professional response that includes:
                 1. Key clinical findings and their significance
                 2. Relevant medical terminology and pathophysiology
                 3. Differential diagnosis considerations
@@ -251,11 +275,11 @@ class MedicalRAGSystem:
                 5. Follow-up and monitoring recommendations
                 6. Any red flags or concerning findings
                 
-                Use appropriate medical terminology and clinical reasoning.
+                Use appropriate medical terminology but keep the tone professional and clear, not overly formal.
                 
                 Response:"""
                 
-                system_message = "You are a senior medical expert with extensive clinical experience, providing professional medical analysis and recommendations."
+                system_message = "You are a medical expert providing professional analysis and recommendations in a clear, accessible manner."
             
             # Call OpenRouter API
             response = self.openai_client.chat.completions.create(
@@ -277,6 +301,31 @@ class MedicalRAGSystem:
 # Initialize RAG system
 rag_system = MedicalRAGSystem()
 
+# Initialize symptom scanner
+symptom_scanner = None
+if SymptomScanner:
+    try:
+        # Look for model file in common locations
+        model_paths = [
+            'models/symptom_model.pt',
+            'backend/models/symptom_model.pt',
+            'symptom_model.pt'
+        ]
+        
+        model_path = None
+        for path in model_paths:
+            if os.path.exists(path):
+                model_path = path
+                break
+        
+        symptom_scanner = SymptomScanner(model_path)
+        logger.info("Symptom scanner initialized successfully")
+    except Exception as e:
+        logger.error(f"Error initializing symptom scanner: {e}")
+        symptom_scanner = None
+else:
+    logger.warning("SymptomScanner module not available")
+
 def allowed_file(filename):
     """Check if file extension is allowed"""
     return '.' in filename and \
@@ -285,9 +334,70 @@ def allowed_file(filename):
 @app.route('/')
 def index():
     """Serve the main page"""
-    return render_template('index.html')
+    if 'user_id' in session:
+        return redirect(url_for('homepage'))
+    return redirect(url_for('login'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """Handle login"""
+    if request.method == 'POST':
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+        
+        if email in users and check_password_hash(users[email]['password'], password):
+            session['user_id'] = email
+            session['user_name'] = users[email]['name']
+            return jsonify({'success': True, 'redirect': url_for('homepage')})
+        else:
+            return jsonify({'success': False, 'error': 'Invalid email or password'}), 401
+    
+    return render_template('login.html')
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    """Handle signup"""
+    if request.method == 'POST':
+        data = request.get_json()
+        name = data.get('name')
+        email = data.get('email')
+        password = data.get('password')
+        
+        if email in users:
+            return jsonify({'success': False, 'error': 'Email already registered'}), 400
+        
+        users[email] = {
+            'name': name,
+            'password': generate_password_hash(password)
+        }
+        
+        session['user_id'] = email
+        session['user_name'] = name
+        return jsonify({'success': True, 'redirect': url_for('homepage')})
+    
+    return render_template('signup.html')
+
+@app.route('/logout')
+def logout():
+    """Handle logout"""
+    session.clear()
+    return redirect(url_for('login'))
+
+@app.route('/homepage')
+@login_required
+def homepage():
+    """Serve the homepage with sidebar"""
+    return render_template('homepage.html', user_name=session.get('user_name'))
+
+@app.route('/report-analysis')
+@login_required
+def report_analysis():
+    """Serve the report analysis page"""
+    return render_template('report_analysis.html')
 
 @app.route('/upload', methods=['POST'])
+@login_required
 def upload_file():
     """Handle PDF file upload and processing"""
     try:
@@ -341,6 +451,7 @@ def upload_file():
         return jsonify({'error': f'Error processing file: {str(e)}'}), 500
 
 @app.route('/query', methods=['POST'])
+@login_required
 def query():
     """Handle user queries with perspective-specific responses"""
     try:
@@ -374,6 +485,35 @@ def query():
         logger.error(f"Error processing query: {e}")
         return jsonify({'error': f'Error processing query: {str(e)}'}), 500
 
+@app.route('/chatbot', methods=['POST'])
+@login_required
+def chatbot():
+    """Handle chatbot queries"""
+    try:
+        data = request.get_json()
+        message = data.get('message', '').strip()
+        
+        if not message:
+            return jsonify({'error': 'No message provided'}), 400
+        
+        # For now, use the same RAG system for chatbot
+        search_results = rag_system.search_similar_chunks(message, top_k=3)
+        
+        if search_results['documents'] and search_results['documents'][0]:
+            context_chunks = search_results['documents'][0]
+            response = rag_system.generate_response(message, context_chunks, 'patient')
+        else:
+            response = "I'm here to help with your medical questions! Please ask me about your health, symptoms, medications, or any medical concerns you might have."
+        
+        return jsonify({
+            'response': response,
+            'message': message
+        })
+    
+    except Exception as e:
+        logger.error(f"Error processing chatbot message: {e}")
+        return jsonify({'error': f'Error processing message: {str(e)}'}), 500
+
 @app.route('/status')
 def status():
     """Check system status"""
@@ -386,12 +526,119 @@ def status():
             'documents_stored': count,
             'embedding_model': 'all-MiniLM-L6-v2',
             'vector_db': 'ChromaDB',
-            'llm_model': 'mistralai/mistral-7b-instruct'
+            'llm_model': 'mistralai/mistral-7b-instruct',
+            'symptom_scanner': 'available' if symptom_scanner else 'not_available'
         })
     
     except Exception as e:
         logger.error(f"Error checking status: {e}")
         return jsonify({'error': f'Error checking status: {str(e)}'}), 500
+
+@app.route('/symptom-scanner/upload', methods=['POST'])
+@login_required
+def upload_symptom_image():
+    """Upload and scan an image for symptoms"""
+    try:
+        if 'image' not in request.files:
+            return jsonify({'error': 'No image file provided'}), 400
+        
+        file = request.files['image']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        if file:
+            # Check if it's an image file
+            allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
+            if not ('.' in file.filename and file.filename.rsplit('.', 1)[1].lower() in allowed_extensions):
+                return jsonify({'error': 'Invalid file type. Please upload an image file.'}), 400
+            
+            # Save the file
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+            
+            if not symptom_scanner:
+                return jsonify({'error': 'Symptom scanner not available'}), 503
+            
+            # Scan the image
+            scan_result = symptom_scanner.scan_image(filepath)
+            
+            # Get condition information
+            condition_info = symptom_scanner.get_condition_info(scan_result['primary_condition'])
+            
+            # Combine results
+            result = {
+                'scan_result': scan_result,
+                'condition_info': condition_info,
+                'filename': filename
+            }
+            
+            return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Error processing symptom image: {e}")
+        return jsonify({'error': f'Error processing image: {str(e)}'}), 500
+
+@app.route('/symptom-scanner/scan-live', methods=['POST'])
+@login_required
+def scan_live_image():
+    """Scan a live image from base64 data"""
+    try:
+        data = request.get_json()
+        if not data or 'image_data' not in data:
+            return jsonify({'error': 'No image data provided'}), 400
+        
+        # Decode base64 image
+        image_data = data['image_data']
+        if image_data.startswith('data:image'):
+            # Remove data URL prefix
+            image_data = image_data.split(',')[1]
+        
+        # Decode base64
+        image_bytes = base64.b64decode(image_data)
+        
+        # Convert to numpy array
+        nparr = np.frombuffer(image_bytes, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        if image is None:
+            return jsonify({'error': 'Invalid image data'}), 400
+        
+        if not symptom_scanner:
+            return jsonify({'error': 'Symptom scanner not available'}), 503
+        
+        # Scan the image
+        scan_result = symptom_scanner.scan_cv2_image(image)
+        
+        # Get condition information
+        condition_info = symptom_scanner.get_condition_info(scan_result['primary_condition'])
+        
+        # Combine results
+        result = {
+            'scan_result': scan_result,
+            'condition_info': condition_info
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Error processing live image: {e}")
+        return jsonify({'error': f'Error processing image: {str(e)}'}), 500
+
+@app.route('/symptom-scanner/condition-info/<condition>')
+@login_required
+def get_condition_info(condition):
+    """Get detailed information about a specific condition"""
+    try:
+        if not symptom_scanner:
+            return jsonify({'error': 'Symptom scanner not available'}), 503
+        
+        condition_info = symptom_scanner.get_condition_info(condition)
+        return jsonify(condition_info)
+        
+    except Exception as e:
+        logger.error(f"Error getting condition info: {e}")
+        return jsonify({'error': f'Error getting condition info: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
