@@ -318,8 +318,19 @@ if SymptomScanner:
                 model_path = path
                 break
         
-        symptom_scanner = SymptomScanner(model_path)
-        logger.info("Symptom scanner initialized successfully")
+        # Initialize OpenAI client for LLM integration
+        openai_client = None
+        if os.getenv('OPENROUTER_API_KEY'):
+            openai_client = openai.OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=os.getenv('OPENROUTER_API_KEY')
+            )
+            logger.info("OpenAI client initialized for LLM integration")
+        else:
+            logger.warning("OPENROUTER_API_KEY not found. LLM features will be limited.")
+        
+        symptom_scanner = SymptomScanner(model_path, openai_client)
+        logger.info("Symptom scanner initialized successfully with LLM integration")
     except Exception as e:
         logger.error(f"Error initializing symptom scanner: {e}")
         symptom_scanner = None
@@ -537,7 +548,7 @@ def status():
 @app.route('/symptom-scanner/upload', methods=['POST'])
 @login_required
 def upload_symptom_image():
-    """Upload and scan an image for symptoms"""
+    """Upload and scan an image for symptoms using LLM analysis"""
     try:
         if 'image' not in request.files:
             return jsonify({'error': 'No image file provided'}), 400
@@ -560,16 +571,26 @@ def upload_symptom_image():
             if not symptom_scanner:
                 return jsonify({'error': 'Symptom scanner not available'}), 503
             
-            # Scan the image
+            # Scan the image with LLM
             scan_result = symptom_scanner.scan_image(filepath)
             
-            # Get condition information
-            condition_info = symptom_scanner.get_condition_info(scan_result['primary_condition'])
+            # Get LLM analysis
+            llm_analysis = scan_result.get('llm_analysis', {})
+            structured_analysis = llm_analysis.get('structured_analysis', {})
             
-            # Combine results
+            # Return only LLM analysis results
             result = {
-                'scan_result': scan_result,
-                'condition_info': condition_info,
+                'llm_analysis': {
+                    'raw_analysis': llm_analysis.get('llm_analysis', 'LLM analysis not available'),
+                    'medical_relevance': structured_analysis.get('medical_relevance', 'Unknown'),
+                    'primary_condition': structured_analysis.get('primary_condition', 'Unknown'),
+                    'description': structured_analysis.get('description', 'No description available'),
+                    'symptoms': structured_analysis.get('symptoms', 'Not specified'),
+                    'severity': structured_analysis.get('severity', 'Unknown'),
+                    'recommendations': structured_analysis.get('recommendations', 'Consult a healthcare professional'),
+                    'confidence': structured_analysis.get('confidence', 'Unknown'),
+                    'model_used': llm_analysis.get('model_used', 'placeholder')
+                },
                 'filename': filename
             }
             
@@ -582,7 +603,7 @@ def upload_symptom_image():
 @app.route('/symptom-scanner/scan-live', methods=['POST'])
 @login_required
 def scan_live_image():
-    """Scan a live image from base64 data"""
+    """Scan a live image from base64 data using LLM analysis"""
     try:
         data = request.get_json()
         if not data or 'image_data' not in data:
@@ -607,16 +628,26 @@ def scan_live_image():
         if not symptom_scanner:
             return jsonify({'error': 'Symptom scanner not available'}), 503
         
-        # Scan the image
+        # Scan the image with LLM
         scan_result = symptom_scanner.scan_cv2_image(image)
         
-        # Get condition information
-        condition_info = symptom_scanner.get_condition_info(scan_result['primary_condition'])
+        # Get LLM analysis
+        llm_analysis = scan_result.get('llm_analysis', {})
+        structured_analysis = llm_analysis.get('structured_analysis', {})
         
-        # Combine results
+        # Return only LLM analysis results
         result = {
-            'scan_result': scan_result,
-            'condition_info': condition_info
+            'llm_analysis': {
+                'raw_analysis': llm_analysis.get('llm_analysis', 'LLM analysis not available'),
+                'medical_relevance': structured_analysis.get('medical_relevance', 'Unknown'),
+                'primary_condition': structured_analysis.get('primary_condition', 'Unknown'),
+                'description': structured_analysis.get('description', 'No description available'),
+                'symptoms': structured_analysis.get('symptoms', 'Not specified'),
+                'severity': structured_analysis.get('severity', 'Unknown'),
+                'recommendations': structured_analysis.get('recommendations', 'Consult a healthcare professional'),
+                'confidence': structured_analysis.get('confidence', 'Unknown'),
+                'model_used': llm_analysis.get('model_used', 'placeholder')
+            }
         }
         
         return jsonify(result)

@@ -682,31 +682,16 @@
             line-height: 1.5;
         }
 
-        .top-predictions {
-            margin-top: 20px;
-            padding-top: 15px;
-            border-top: 1px solid #e9ecef;
-        }
-
-        .top-predictions h4 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-        }
-
-        .predictions-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .prediction-item {
-            background: #e9ecef;
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
+        /* New styles for raw analysis */
+        .raw-analysis {
+            background: #f0f2f5;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 0.9rem;
             color: #333;
-            font-weight: 500;
+            line-height: 1.6;
+            white-space: pre-wrap; /* Preserve line breaks and spaces */
+            word-wrap: break-word;
         }
     </style>
 </head>
@@ -940,39 +925,20 @@
                         </div>
                         
                         <div class="results-content">
+                            <!-- LLM Analysis Section -->
+                            <!-- Raw LLM Analysis -->
                             <div class="result-card">
                                 <div class="result-header">
-                                    <h3 id="primaryCondition">Loading...</h3>
-                                    <div class="confidence-badge" id="confidenceBadge">0%</div>
+                                    <h3>📝 Detailed Analysis</h3>
                                 </div>
                                 
                                 <div class="condition-info">
                                     <div class="info-section">
-                                        <h4>Description</h4>
-                                        <p id="conditionDescription">Loading...</p>
+                                        <h4>Full AI Analysis</h4>
+                                        <div id="rawAnalysis" class="raw-analysis">
+                                            Loading...
+                                        </div>
                                     </div>
-                                    
-                                    <div class="info-section">
-                                        <h4>Symptoms</h4>
-                                        <p id="conditionSymptoms">Loading...</p>
-                                    </div>
-                                    
-                                    <div class="info-section">
-                                        <h4>Recommendations</h4>
-                                        <p id="conditionRecommendations">Loading...</p>
-                                    </div>
-                                    
-                                    <div class="info-section">
-                                        <h4>Severity</h4>
-                                        <p id="conditionSeverity">Loading...</p>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="top-predictions">
-                                <h4>Top Predictions</h4>
-                                <div id="predictionsList" class="predictions-list">
-                                    <!-- Predictions will be populated here -->
                                 </div>
                             </div>
                         </div>
@@ -1432,45 +1398,42 @@
             document.getElementById('results-section').style.display = 'block';
             
             // Show loading state
-            document.getElementById('primaryCondition').textContent = 'Analyzing...';
-            document.getElementById('conditionDescription').textContent = 'Loading...';
-            document.getElementById('conditionSymptoms').textContent = 'Loading...';
-            document.getElementById('conditionRecommendations').textContent = 'Loading...';
-            document.getElementById('conditionSeverity').textContent = 'Loading...';
-            document.getElementById('confidenceBadge').textContent = '0%';
-            document.getElementById('predictionsList').innerHTML = '';
+            document.getElementById('llmConfidenceBadge').textContent = '0%';
+            document.getElementById('medicalRelevance').textContent = 'Loading...';
+            document.getElementById('llmPrimaryCondition').textContent = 'Loading...';
+            document.getElementById('llmDescription').textContent = 'Loading...';
+            document.getElementById('llmSymptoms').textContent = 'Loading...';
+            document.getElementById('llmSeverity').textContent = 'Loading...';
+            document.getElementById('llmRecommendations').textContent = 'Loading...';
+            document.getElementById('rawAnalysis').textContent = 'Loading...';
         }
 
         function displayResults(data) {
-            const scanResult = data.scan_result;
-            const conditionInfo = data.condition_info;
+            const llmAnalysis = data.llm_analysis;
             
-            // Update primary condition
-            document.getElementById('primaryCondition').textContent = scanResult.primary_condition;
-            document.getElementById('confidenceBadge').textContent = `${Math.round(scanResult.confidence * 100)}%`;
-            
-            // Update condition information
-            document.getElementById('conditionDescription').textContent = conditionInfo.description || 'No description available.';
-            document.getElementById('conditionSymptoms').textContent = conditionInfo.symptoms || 'No specific symptoms listed.';
-            document.getElementById('conditionRecommendations').textContent = conditionInfo.recommendations || 'No specific recommendations.';
-            document.getElementById('conditionSeverity').textContent = conditionInfo.severity || 'Severity not specified.';
-            
-            // Display top predictions
-            const predictionsHtml = Object.entries(scanResult.top_predictions)
-                .map(([name, confidence]) => 
-                    `<div class="prediction-item">${name} (${Math.round(confidence * 100)}%)</div>`
-                ).join('');
-            document.getElementById('predictionsList').innerHTML = predictionsHtml;
+            // Update LLM Analysis
+            const llmConfidence = llmAnalysis.confidence || '0%';
+            document.getElementById('llmConfidenceBadge').textContent = llmConfidence;
+            document.getElementById('medicalRelevance').textContent = llmAnalysis.medical_relevance || 'Not specified';
+            document.getElementById('llmPrimaryCondition').textContent = llmAnalysis.primary_condition || 'Not specified';
+            document.getElementById('llmDescription').textContent = llmAnalysis.description || 'No description available';
+            document.getElementById('llmSymptoms').textContent = llmAnalysis.symptoms || 'No specific symptoms listed';
+            document.getElementById('llmSeverity').textContent = llmAnalysis.severity || 'Severity not specified';
+            document.getElementById('llmRecommendations').textContent = llmAnalysis.recommendations || 'No specific recommendations';
+
+            // Update Raw LLM Analysis
+            document.getElementById('rawAnalysis').textContent = llmAnalysis.raw_analysis || 'No detailed analysis available';
         }
 
         function displayError(message) {
-            document.getElementById('primaryCondition').textContent = 'Error';
-            document.getElementById('conditionDescription').textContent = message;
-            document.getElementById('conditionSymptoms').textContent = 'Please try again.';
-            document.getElementById('conditionRecommendations').textContent = 'Please try again.';
-            document.getElementById('conditionSeverity').textContent = 'Unknown';
-            document.getElementById('confidenceBadge').textContent = '0%';
-            document.getElementById('predictionsList').innerHTML = '';
+            document.getElementById('llmConfidenceBadge').textContent = '0%';
+            document.getElementById('medicalRelevance').textContent = message;
+            document.getElementById('llmPrimaryCondition').textContent = 'Error';
+            document.getElementById('llmDescription').textContent = message;
+            document.getElementById('llmSymptoms').textContent = 'Please try again.';
+            document.getElementById('llmSeverity').textContent = 'Unknown';
+            document.getElementById('llmRecommendations').textContent = 'Please try again.';
+            document.getElementById('rawAnalysis').textContent = message;
         }
     </script>
 </body>

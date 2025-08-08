@@ -27,11 +27,13 @@ MediCheck is a comprehensive AI-powered medical assistant that helps users under
 ### 🔍 Symptom Scanner
 - **Image Upload**: Upload images from your device for analysis
 - **Live Camera**: Use your camera for real-time symptom scanning
-- **AI Analysis**: Powered by PyTorch models for accurate diagnosis
+- **AI Analysis**: Powered by LLM for comprehensive medical analysis
+- **LLM Integration**: Advanced image analysis using vision-capable models for medical descriptions
+- **Medical Relevance Detection**: Automatically identifies if images are medically relevant
 - **Condition Information**: Detailed information about detected conditions
-- **Confidence Scores**: Get confidence levels for predictions
-- **Top Predictions**: View multiple possible conditions with probabilities
+- **Confidence Scores**: Get confidence levels for LLM analysis
 - **Medical Recommendations**: Get advice and next steps for detected conditions
+- **Comprehensive Analysis**: Detailed LLM medical descriptions and analysis
 
 ### 📊 Medical Report Analysis
 - **PDF Upload**: Drag and drop or browse to upload medical reports
@@ -68,12 +70,18 @@ MediCheck is a comprehensive AI-powered medical assistant that helps users under
    - `backend/models/symptom_model.pt`
    - `symptom_model.pt` (root directory)
 
-5. **Run the application**
+5. **Vision Model Requirements** (for LLM image analysis):
+   - Ensure your OpenRouter API key has access to vision-capable models
+   - Supported models: `openai/gpt-4o`, `openai/gpt-4o-mini`, `anthropic/claude-3-5-sonnet`, `anthropic/claude-3-haiku`, `google/gemini-pro-1.5`
+   - Run `python test_vision_models.py` to check which models are available
+   - If no vision models are available, the system will fall back to text-only analysis
+
+6. **Run the application**
    ```bash
    python app.py
    ```
 
-6. **Access the application**
+7. **Access the application**
    Open your browser and go to `http://localhost:5000`
 
 ## Usage
@@ -88,9 +96,12 @@ MediCheck is a comprehensive AI-powered medical assistant that helps users under
 2. **Choose Input Method**:
    - **Upload Image**: Click "Upload Image" and select an image file
    - **Live Camera**: Click "Live Camera" and use your device's camera
-3. **Analyze Symptoms**: The AI will analyze the image and provide results
-4. **View Results**: See the detected condition, confidence score, and recommendations
+3. **Analyze Symptoms**: The AI will analyze the image using LLM
+4. **View Results**: See comprehensive analysis including:
+   - **LLM Analysis**: Medical relevance, detailed descriptions, symptoms, severity, and recommendations
+   - **Raw Analysis**: Full AI analysis text
 5. **Get Information**: Read detailed information about the detected condition
+6. **Medical Relevance**: The system automatically identifies if the image is medically relevant
 
 ### Using the ChatBot
 1. **Text Chat**: Click the chatbot icon in the bottom right corner
@@ -112,6 +123,7 @@ MediCheck is a comprehensive AI-powered medical assistant that helps users under
   - Sentence Transformers for embeddings
   - Mistral-7B-Instruct for text generation
   - PyTorch models for symptom analysis
+  - Vision-capable LLMs for image analysis
 - **Authentication**: Session-based with password hashing
 - **Image Processing**: OpenCV and PIL for image handling
 
@@ -128,7 +140,23 @@ MediCheck is a comprehensive AI-powered medical assistant that helps users under
 - **Vector Search**: Semantic search through medical documents
 - **Context-Aware Responses**: Tailored responses based on uploaded reports
 - **Symptom Analysis**: AI-powered image analysis for symptom detection
-- **Condition Classification**: Multi-class classification for various medical conditions
+- **LLM Image Analysis**: Vision-capable LLM integration for comprehensive medical image analysis
+- **Medical Relevance Detection**: Automatic identification of medically relevant images
+- **Comprehensive Analysis**: Detailed LLM medical descriptions and analysis
+
+## Troubleshooting
+
+### Vision Model Issues
+- **Error**: "No endpoints found for gpt-4-vision-preview"
+  - **Solution**: The system now automatically tries multiple vision models
+  - **Check**: Run `python test_vision_models.py` to see available models
+  - **Fallback**: If no vision models work, the system will use text-only analysis
+
+### LLM Integration Issues
+- **Error**: "LLM analysis not available"
+  - **Check**: Ensure `OPENROUTER_API_KEY` is set in your `.env` file
+  - **Verify**: Test your API key with `python test_vision_models.py`
+  - **Alternative**: The system will provide placeholder analysis if LLM is not available
 
 ## Security Features
 
