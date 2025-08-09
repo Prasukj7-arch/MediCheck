@@ -19,6 +19,7 @@ import cv2
 from PIL import Image
 import base64
 from datetime import datetime, timedelta
+import re as _re
 
 # Import the symptom scanner
 try:
@@ -626,7 +627,7 @@ def chatbot():
             except Exception as e:
                 logger.error(f"Error booking appointment through chatbot: {e}")
                 return jsonify({
-                    'response': "I'm sorry, I encountered an error while booking your appointment. Please try again or contact support.",
+                    'response': "There was an error while booking your appointment. Please try again or contact support.",
                     'follow_up_questions': [
                         "Would you like to try booking again?",
                         "Should I connect you to support?"
@@ -637,7 +638,17 @@ def chatbot():
         if medical_chatbot:
             user_id = session.get('user_id', 'default_user')
             result = medical_chatbot.generate_medical_response(user_id, message)
-            
+            # Sanitize tone (avoid apologetic phrasing)
+            def _sanitize(text: str) -> str:
+                if not isinstance(text, str):
+                    return text
+                patterns = [r"\bI'm sorry\b", r"\bI am sorry\b", r"\bSorry,?\b", r"\bI apologize\b"]
+                sanitized = text
+                for pat in patterns:
+                    sanitized = _re.sub(pat, "", sanitized, flags=_re.IGNORECASE)
+                sanitized = _re.sub(r"\s{2,}", " ", sanitized).strip()
+                return sanitized
+            result['response'] = _sanitize(result.get('response', ''))
             return jsonify({
                 'response': result['response'],
                 'follow_up_questions': result['follow_up_questions'],
@@ -653,8 +664,11 @@ def chatbot():
             else:
                 response = "I'm here to help with your medical questions! Please ask me about your health, symptoms, medications, or any medical concerns you might have."
             
+            # Sanitize fallback response tone
+            response_sanitized = _re.sub(r"\bI'm sorry\b|\bI am sorry\b|\bSorry,?\b|\bI apologize\b", "", response, flags=_re.IGNORECASE)
+            response_sanitized = _re.sub(r"\s{2,}", " ", response_sanitized).strip()
             return jsonify({
-                'response': response,
+                'response': response_sanitized,
                 'follow_up_questions': [
                     "What health symptoms are you experiencing?",
                     "Do you have any medical conditions I should know about?",
@@ -687,6 +701,142 @@ def status():
     except Exception as e:
         logger.error(f"Error checking status: {e}")
         return jsonify({'error': f'Error checking status: {str(e)}'}), 500
+
+@app.route('/health-planning')
+@login_required
+def health_planning_page():
+    """Serve the standalone AI Health Planning page"""
+    return render_template('health_planning.html', user_name=session.get('user_name'))
+
+@app.route('/health-planning/diet', methods=['POST'])
+@login_required
+def health_planning_diet():
+    """Generate a personalized diet recipe using the LLM and return strict JSON"""
+    try:
+        data = request.get_json()
+        recipe_type = (data.get('recipe_type') or 'any').strip()
+        ingredients = (data.get('ingredients') or '').strip()
+
+        if not ingredients:
+            return jsonify({'error': 'Ingredients are required'}), 400
+
+        # Build a strict JSON-only prompt
+        schema_desc = (
+            "Return JSON with keys: recipe_name (string), type (string), "
+            "ingredients (array of strings), steps (array of objects with task (string) and duration (number minutes))."
+        )
+        type_text = '' if recipe_type.lower() == 'any' else recipe_type
+        user_prompt = (
+            f"Based on the following ingredients: {ingredients}, create a single, healthy {type_text} recipe. "
+            f"The recipe must be practical and delicious. {schema_desc} "
+            "If ingredients contradict the recipe type (e.g., chicken for vegan), set recipe_name to explain it's not possible "
+            "and provide steps that explain why. Respond with ONLY valid JSON and no extra commentary."
+        )
+
+        # Use existing OpenRouter client from rag_system
+        client = getattr(rag_system, 'openai_client', None)
+        if client is None:
+            return jsonify({'error': 'LLM client not available. Set OPENROUTER_API_KEY.'}), 503
+
+        response = client.chat.completions.create(
+            model="mistralai/mistral-7b-instruct",
+            messages=[
+                {"role": "system", "content": "You return ONLY strict JSON that conforms to the requested schema."},
+                {"role": "user", "content": user_prompt}
+            ],
+            max_tokens=900,
+            temperature=0.2
+        )
+
+        content = response.choices[0].message.content
+
+        import json, re
+        def extract_json(text: str):
+            try:
+                return json.loads(text)
+            except Exception:
+                match = re.search(r"\{[\s\S]*\}", text)
+                if match:
+                    try:
+                        return json.loads(match.group(0))
+                    except Exception:
+                        return None
+                return None
+
+        parsed = extract_json(content)
+        if not parsed:
+            return jsonify({'error': 'LLM returned invalid format', 'raw': content}), 502
+
+        return jsonify(parsed)
+    except Exception as e:
+        logger.error(f"Error generating diet plan: {e}")
+        return jsonify({'error': f'Error generating diet plan: {str(e)}'}), 500
+
+@app.route('/health-planning/fitness', methods=['POST'])
+@login_required
+def health_planning_fitness():
+    """Generate a personalized fitness/yoga plan using the LLM and return strict JSON"""
+    try:
+        data = request.get_json()
+        age = data.get('age')
+        gender = (data.get('gender') or '').strip() or 'prefer not to say'
+        weight = data.get('weight')
+        experience = (data.get('experience') or 'never').strip()
+        activity_type = (data.get('activity_type') or 'exercise').strip()
+
+        if not age or not weight:
+            return jsonify({'error': 'Age and weight are required'}), 400
+
+        schema_desc = (
+            "Return JSON with keys: plan_title (string), average_met (number), "
+            "activities (array of {name (string), description (string), image_url (string)})."
+        )
+
+        user_prompt = (
+            f"Create a personalized {activity_type} plan for a {age}-year-old {gender} with experience level '{experience}'. "
+            f"Include 5-7 suitable activities. Provide an overall average_met value for the entire plan. "
+            f"For each activity, include a name, brief description (sets, reps, or duration), and a placeholder image URL "
+            f"from placehold.co in the format https://placehold.co/200x150/a2d2ff/ffffff?text=ActivityName. "
+            f"{schema_desc} Respond with ONLY valid JSON and no extra commentary."
+        )
+
+        client = getattr(rag_system, 'openai_client', None)
+        if client is None:
+            return jsonify({'error': 'LLM client not available. Set OPENROUTER_API_KEY.'}), 503
+
+        response = client.chat.completions.create(
+            model="mistralai/mistral-7b-instruct",
+            messages=[
+                {"role": "system", "content": "You return ONLY strict JSON that conforms to the requested schema."},
+                {"role": "user", "content": user_prompt}
+            ],
+            max_tokens=900,
+            temperature=0.2
+        )
+
+        content = response.choices[0].message.content
+
+        import json, re
+        def extract_json(text: str):
+            try:
+                return json.loads(text)
+            except Exception:
+                match = re.search(r"\{[\s\S]*\}", text)
+                if match:
+                    try:
+                        return json.loads(match.group(0))
+                    except Exception:
+                        return None
+                return None
+
+        parsed = extract_json(content)
+        if not parsed:
+            return jsonify({'error': 'LLM returned invalid format', 'raw': content}), 502
+
+        return jsonify(parsed)
+    except Exception as e:
+        logger.error(f"Error generating fitness plan: {e}")
+        return jsonify({'error': f'Error generating fitness plan: {str(e)}'}), 500
 
 @app.route('/symptom-scanner/upload', methods=['POST'])
 @login_required
@@ -988,7 +1138,7 @@ def chatbot_appointment():
     except Exception as e:
         logger.error(f"Error booking appointment through chatbot: {e}")
         return jsonify({
-            'response': "I'm sorry, I encountered an error while booking your appointment. Please try again or contact support.",
+            'response': "There was an error while booking your appointment. Please try again or contact support.",
             'follow_up_questions': [
                 "Would you like to try booking again?",
                 "Should I connect you to support?"

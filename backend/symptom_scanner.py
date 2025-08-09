@@ -218,13 +218,13 @@ class SymptomScanner:
 
 Please provide your analysis in the following format:
 
-1. **Medical Relevance**: Is this image medically relevant? (Yes/No)
-2. **Primary Condition**: What is the primary medical condition or finding?
-3. **Description**: Provide a detailed medical description of what you observe
-4. **Symptoms**: List any visible symptoms or signs
-5. **Severity**: Assess the severity (None, Mild, Moderate, Severe, Critical)
-6. **Recommendations**: Provide medical recommendations or next steps
-7. **Confidence**: Rate your confidence in this analysis (0-100%)
+1. Medical Relevance: Is this image medically relevant? (Yes/No)
+2. Primary Condition: What is the primary medical condition or finding?
+3. Description: Provide a detailed medical description of what you observe
+4. Symptoms: List any visible symptoms or signs
+5. Severity: Assess the severity (None, Mild, Moderate, Severe, Critical)
+6. Recommendations: Provide medical recommendations or next steps
+7. Confidence: Rate your confidence in this analysis (0-100%)
 
 If the image is not medically relevant, please state "Not associated with medical conditions" and provide a brief description of what you see.
 
@@ -304,13 +304,13 @@ Please be thorough and professional in your analysis."""
 
 Please provide a general medical analysis template that would be appropriate for medical image analysis:
 
-1. **Medical Relevance**: Based on typical medical images, this is likely medically relevant
-2. **Primary Condition**: This would require visual examination to determine
-3. **Description**: Medical images typically show anatomical structures, pathological findings, or diagnostic information
-4. **Symptoms**: Would depend on the specific condition visible in the image
-5. **Severity**: Would be assessed based on the findings
-6. **Recommendations**: General recommendation would be to consult with a healthcare professional for proper diagnosis
-7. **Confidence**: Cannot provide confidence without visual analysis
+1. Medical Relevance: Based on typical medical images, this is likely medically relevant
+2. Primary Condition: This would require visual examination to determine
+3. Description: Medical images typically show anatomical structures, pathological findings, or diagnostic information
+4. Symptoms: Would depend on the specific condition visible in the image
+5. Severity: Would be assessed based on the findings
+6. Recommendations: General recommendation would be to consult with a healthcare professional for proper diagnosis
+7. Confidence: Cannot provide confidence without visual analysis
 
 Please note: This is a general analysis as the actual image cannot be processed. For accurate diagnosis, please consult with a healthcare professional."""
 

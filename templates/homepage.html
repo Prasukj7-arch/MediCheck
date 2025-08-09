@@ -990,6 +990,44 @@
             white-space: pre-wrap; /* Preserve line breaks and spaces */
             word-wrap: break-word;
         }
+
+        /* AI Health Planning styles (namespaced with hp-) */
+        .hp-page-container { max-width: 1200px; margin: auto; }
+        .hp-title { color: #0056b3; text-align: center; margin-bottom: 8px; font-weight: 400; }
+        .hp-subtitle { color: #666; text-align: center; margin-bottom: 20px; }
+        .hp-page { display: none; }
+        .hp-page.active { display: block; }
+        .hp-home-layout { display: flex; gap: 30px; justify-content: center; align-items: center; min-height: 30vh; }
+        .hp-home-card { flex: 1; max-width: 400px; background: #fff; padding: 24px; border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.08); text-align: center; cursor: pointer; transition: transform .3s, box-shadow .3s; }
+        .hp-home-card:hover { transform: translateY(-8px); box-shadow: 0 10px 20px rgba(0,0,0,0.12); }
+        .hp-home-card .hp-icon { font-size: 3rem; margin-bottom: 12px; }
+        .hp-back-btn { background-color: #6c757d; color: #fff; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; margin-bottom: 16px; }
+        .hp-back-btn:hover { background-color: #5a6268; }
+        .hp-content-box { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 16px; }
+        .hp-form-group { margin-bottom: 16px; }
+        .hp-form-group label { display: block; margin-bottom: 6px; font-weight: 600; }
+        .hp-form-group textarea,
+        .hp-form-group select,
+        .hp-form-group input[type="number"] { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; box-sizing: border-box; background: #fff; }
+        .hp-btn { background-color: #007bff; color: #fff; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: background-color .3s; }
+        .hp-btn:disabled { background-color: #a0cfff; cursor: not-allowed; }
+        .hp-btn:hover:not(:disabled) { background-color: #0056b3; }
+        .hp-loader { border: 5px solid #f3f3f3; border-radius: 50%; border-top: 5px solid #007bff; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; display: none; }
+        .hp-activity-toggle { text-align: center; margin: 10px 0 16px; display: flex; gap: 10px; justify-content: center; }
+        .hp-activity-toggle .hp-btn { background: #e0e0e0; color: #333; }
+        .hp-activity-toggle .hp-btn.active { background: #007bff; color: #fff; }
+        .hp-activity-list { list-style-type: none; padding-left: 0; }
+        .hp-activity-list li { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; color: #555; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
+        .hp-activity-list img { width: 100px; height: 75px; object-fit: cover; border-radius: 8px; background: #e0e0e0; }
+        .hp-tracker { margin-top: 16px; padding: 16px; border: 2px dashed #007bff; border-radius: 10px; text-align: center; background: #f8f9fa; }
+        .hp-timer { font-size: 2rem; font-weight: 700; }
+        .hp-calories { font-size: 2rem; font-weight: 700; color: #28a745; }
+        .hp-history-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        .hp-history-table th, .hp-history-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        .hp-history-table th { background: #f2f2f2; }
+        .hp-modal { display: none; position: fixed; z-index: 1000; inset: 0; background: rgba(0,0,0,0.6); }
+        .hp-modal-content { background: #fff; margin: 5% auto; padding: 24px; border: 1px solid #888; width: 80%; max-width: 700px; border-radius: 12px; position: relative; }
+        .hp-close { color: #aaa; position: absolute; top: 12px; right: 20px; font-size: 26px; font-weight: 700; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -1024,6 +1062,12 @@
                     <a href="#" class="nav-link" data-section="report-analysis">
                         <span class="icon">📊</span>
                         <span class="nav-text">Report Analysis</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/health-planning" class="nav-link">
+                        <span class="icon">🧠</span>
+                        <span class="nav-text">AI Health Planning</span>
                     </a>
                 </li>
                 <li>
@@ -1250,6 +1294,11 @@
                         
                         <div class="results-content">
                             <!-- LLM Analysis Section -->
+                            <div class="result-card">
+                                <div class="result-header">
+                                    <h3 id="primaryCondition">Loading...</h3>
+                                </div>
+                            </div>
                             <!-- Raw LLM Analysis -->
                             <div class="result-card">
                                 <div class="result-header">
@@ -1277,6 +1326,117 @@
                 </div>
                 <div style="text-align: center; padding: 50px;">
                     <p>Emergency SOS functionality will be implemented here.</p>
+                </div>
+            </div>
+
+            <!-- AI Health Planning Section -->
+            <div id="health-planning-section" class="content-section" style="display: none;">
+                <div class="content-header">
+                    <h1 class="hp-title">🧠 AI Health Planning</h1>
+                    <p class="hp-subtitle">Personalized diet recipes and fitness plans generated by AI.</p>
+                </div>
+
+                <div class="hp-page-container">
+                    <!-- HP Page: Home -->
+                    <div id="hp-home" class="hp-page active">
+                        <div class="hp-home-layout">
+                            <div class="hp-home-card" onclick="hpShowPage('hp-diet')">
+                                <div class="hp-icon">🥗</div>
+                                <h3>Homely Diet Planner</h3>
+                                <p>Get personalized recipes based on the ingredients you already have at home.</p>
+                            </div>
+                            <div class="hp-home-card" onclick="hpShowPage('hp-fitness')">
+                                <div class="hp-icon">🏋️‍♀️</div>
+                                <h3>Personalized Fitness Plan</h3>
+                                <p>Find exercise and yoga routines tailored to your fitness level.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- HP Page: Diet Planner -->
+                    <div id="hp-diet" class="hp-page">
+                        <button class="hp-back-btn" onclick="hpShowPage('hp-home')">← Back to Home</button>
+                        <div class="hp-content-box">
+                            <h2>AI-Powered Diet Planner</h2>
+                            <p>Select your dietary preference, then enter your available ingredients.</p>
+
+                            <div class="hp-form-group">
+                                <label for="hp-recipe-type">Select Recipe Type:</label>
+                                <select id="hp-recipe-type">
+                                    <option value="any">Any</option>
+                                    <option value="vegetarian">Vegetarian</option>
+                                    <option value="non-vegetarian">Non-Vegetarian</option>
+                                    <option value="vegan">Vegan</option>
+                                    <option value="gluten-free">Gluten-Free</option>
+                                </select>
+                            </div>
+                            <div class="hp-form-group">
+                                <label for="hp-ingredients">Enter ingredients (comma separated):</label>
+                                <textarea id="hp-ingredients" placeholder="e.g., chicken, rice, onion, tomato, spinach..."></textarea>
+                            </div>
+                            <button type="button" id="hp-recipe-btn" class="hp-btn" onclick="hpGenerateDietPlan()">Find Recipe</button>
+
+                            <div class="hp-loader" id="hp-diet-loader"></div>
+                            <div id="hp-diet-results"></div>
+                        </div>
+                    </div>
+
+                    <!-- HP Page: Fitness Planner -->
+                    <div id="hp-fitness" class="hp-page">
+                        <button class="hp-back-btn" onclick="hpShowPage('hp-home')">← Back to Home</button>
+                        <div class="hp-content-box">
+                            <h2>AI-Powered Fitness Plan</h2>
+                            <p>Tell us about yourself to get a personalized exercise or yoga plan.</p>
+
+                            <div class="hp-form-group">
+                                <label for="hp-age">Your Age:</label>
+                                <input type="number" id="hp-age" placeholder="e.g., 35" min="12" max="100">
+                            </div>
+                            <div class="hp-form-group">
+                                <label for="hp-gender">Your Gender:</label>
+                                <select id="hp-gender">
+                                    <option value="female">Female</option>
+                                    <option value="male">Male</option>
+                                    <option value="prefer not to say">Prefer not to say</option>
+                                </select>
+                            </div>
+                            <div class="hp-form-group">
+                                <label for="hp-weight">Your Weight (kg):</label>
+                                <input type="number" id="hp-weight" placeholder="e.g., 70" min="30" max="200">
+                            </div>
+                            <div class="hp-form-group">
+                                <label for="hp-experience">How often do you exercise?</label>
+                                <select id="hp-experience">
+                                    <option value="never">Never (Beginner)</option>
+                                    <option value="rarely">Rarely (1-2 times a month)</option>
+                                    <option value="often">Often (2-3 times a week)</option>
+                                    <option value="very often">Very Often (4+ times a week)</option>
+                                </select>
+                            </div>
+                            <div class="hp-activity-toggle">
+                                <button id="hp-show-exercise" class="hp-btn active" onclick="hpToggleActivity('exercise')">💪 Exercise</button>
+                                <button id="hp-show-yoga" class="hp-btn" onclick="hpToggleActivity('yoga')">🧘 Yoga</button>
+                            </div>
+                            <button type="button" id="hp-fitness-btn" class="hp-btn" onclick="hpGenerateFitnessPlan()">Generate My Plan</button>
+
+                            <div class="hp-loader" id="hp-fitness-loader"></div>
+                            <div id="hp-fitness-results"></div>
+                        </div>
+
+                        <div class="hp-content-box">
+                            <h3>Workout History</h3>
+                            <div id="hp-history-log"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recipe Modal -->
+                <div id="hp-recipe-modal" class="hp-modal">
+                    <div class="hp-modal-content">
+                        <span class="hp-close" onclick="hpCloseModal()">&times;</span>
+                        <div id="hp-recipe-details"></div>
+                        <div id="hp-recipe-timer" class="hp-content-box"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1481,7 +1641,7 @@
                 typingIndicator.remove();
                 
                 // Add error message
-                addMessage('Sorry, I encountered an error. Please try again.', 'bot');
+                addMessage('An error occurred. Please try again.', 'bot');
             }
         }
 
@@ -1497,15 +1657,37 @@
                 const button = document.createElement('button');
                 button.className = 'follow-up-question-btn';
                 button.textContent = question;
-                button.onclick = () => {
-                    document.getElementById('chatbotInput').value = question;
-                    sendChatbotMessage();
-                    followUpDiv.style.display = 'none';
-                };
+                button.onclick = () => askSuggestedQuestion(question);
                 questionButtons.appendChild(button);
             });
             
             followUpDiv.style.display = 'block';
+        }
+
+        async function askSuggestedQuestion(question) {
+            // Show the suggested question as if asked by the chatbot
+            addMessage(question, 'bot');
+            document.getElementById('followUpQuestions').style.display = 'none';
+
+            // Show typing indicator
+            const typingIndicator = addMessage('Typing...', 'bot');
+
+            try {
+                const response = await fetch('/chatbot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: question })
+                });
+                const data = await response.json();
+                typingIndicator.remove();
+                addMessage(data.response, 'bot');
+                if (data.follow_up_questions && data.follow_up_questions.length > 0) {
+                    showFollowUpQuestions(data.follow_up_questions);
+                }
+            } catch (e) {
+                typingIndicator.remove();
+                addMessage('An error occurred. Please try again.', 'bot');
+            }
         }
 
         function addMessage(content, sender) {
@@ -1526,6 +1708,225 @@
             return messageDiv;
         }
 
+        // ===== AI Health Planning JS =====
+        function hpShowPage(pageId) {
+            document.querySelectorAll('.hp-page').forEach(p => p.classList.remove('active'));
+            const page = document.getElementById(pageId);
+            if (page) page.classList.add('active');
+            if (pageId === 'hp-fitness') {
+                hpDisplayWorkoutHistory();
+            }
+        }
+
+        let hpCurrentRecipe = null;
+        let hpCurrentFitnessPlan = null;
+        let hpCurrentActivityType = 'exercise';
+        let hpWorkoutTimerInterval;
+        let hpWorkoutSeconds = 0;
+
+        async function hpGenerateDietPlan() {
+            const recipeType = document.getElementById('hp-recipe-type').value;
+            const ingredients = document.getElementById('hp-ingredients').value.trim();
+            const resultsDiv = document.getElementById('hp-diet-results');
+            const loader = document.getElementById('hp-diet-loader');
+            const btn = document.getElementById('hp-recipe-btn');
+
+            if (!ingredients) {
+                resultsDiv.innerHTML = '<p>Please enter some ingredients first!</p>';
+                return;
+            }
+
+            resultsDiv.innerHTML = '';
+            loader.style.display = 'block';
+            btn.disabled = true;
+
+            try {
+                const resp = await fetch('/health-planning/diet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ recipe_type: recipeType, ingredients })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'Failed to generate recipe');
+
+                hpCurrentRecipe = data;
+                if (!Array.isArray(hpCurrentRecipe.steps) || hpCurrentRecipe.steps.length === 0 ||
+                    (hpCurrentRecipe.recipe_name || '').toLowerCase().includes('not possible')) {
+                    resultsDiv.innerHTML = `<p style="color:#d9534f;font-weight:700;">${hpCurrentRecipe.recipe_name || 'Not possible'}</p>`;
+                } else {
+                    const totalTime = hpCurrentRecipe.steps.reduce((sum, s) => sum + (Number(s.duration) || 0), 0);
+                    resultsDiv.innerHTML = `
+                        <div class="recipe-card" onclick="hpShowRecipe()">
+                            <h4>${hpCurrentRecipe.recipe_name}</h4>
+                            <p>(${hpCurrentRecipe.type})</p>
+                            <p>Total Time: ${totalTime} mins</p>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                resultsDiv.innerHTML = `<p style="color:red;">Sorry, there was an error generating the recipe. Please try again. ${e.message}</p>`;
+            } finally {
+                loader.style.display = 'none';
+                btn.disabled = false;
+            }
+        }
+
+        async function hpGenerateFitnessPlan() {
+            const age = document.getElementById('hp-age').value;
+            const gender = document.getElementById('hp-gender').value;
+            const weight = document.getElementById('hp-weight').value;
+            const experience = document.getElementById('hp-experience').value;
+            const resultsDiv = document.getElementById('hp-fitness-results');
+            const loader = document.getElementById('hp-fitness-loader');
+            const btn = document.getElementById('hp-fitness-btn');
+
+            if (!age || !weight) {
+                resultsDiv.innerHTML = '<p>Please enter your age and weight.</p>';
+                return;
+            }
+
+            resultsDiv.innerHTML = '';
+            loader.style.display = 'block';
+            btn.disabled = true;
+
+            try {
+                const resp = await fetch('/health-planning/fitness', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ age, gender, weight, experience, activity_type: hpCurrentActivityType })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'Failed to generate plan');
+                hpCurrentFitnessPlan = data;
+                hpDisplayFitnessPlan(hpCurrentFitnessPlan);
+            } catch (e) {
+                resultsDiv.innerHTML = `<p style="color:red;">Sorry, there was an error generating the fitness plan. Please try again. ${e.message}</p>`;
+            } finally {
+                loader.style.display = 'none';
+                btn.disabled = false;
+            }
+        }
+
+        function hpDisplayFitnessPlan(plan) {
+            const resultsDiv = document.getElementById('hp-fitness-results');
+            const activities = (plan.activities || []).map(a => `
+                <li>
+                    <img src="${a.image_url}" alt="${a.name}" onerror="this.onerror=null;this.src='https://placehold.co/100x75/cccccc/ffffff?text=Error';" />
+                    <div>
+                        <strong>${a.name}</strong>
+                        <p>${a.description}</p>
+                    </div>
+                </li>
+            `).join('');
+            resultsDiv.innerHTML = `
+                <h3>${plan.plan_title || 'Your Plan'}</h3>
+                <ul class="hp-activity-list">${activities}</ul>
+                <div id="hp-tracker" class="hp-tracker" style="display:none;">
+                    <h4>Workout Tracker</h4>
+                    <div>
+                        <p>Time Elapsed</p>
+                        <p id="hp-workout-timer" class="hp-timer">00:00:00</p>
+                    </div>
+                    <div>
+                        <p>Calories Burned (Est.)</p>
+                        <p id="hp-calories" class="hp-calories">0</p>
+                    </div>
+                    <div class="timer-controls" style="margin-top:8px;">
+                        <button class="hp-btn" id="hp-start" onclick="hpStartWorkoutTimer()">Start</button>
+                        <button class="hp-btn" id="hp-pause" onclick="hpPauseWorkoutTimer()" style="display:none;">Pause</button>
+                        <button class="hp-btn" id="hp-stop" onclick="hpStopWorkoutTimer()" style="display:none;">Stop & Save</button>
+                    </div>
+                </div>
+                <button class="hp-btn" id="hp-start-visible" onclick="document.getElementById('hp-tracker').style.display='block'; this.style.display='none';">Start Workout</button>
+            `;
+        }
+
+        function hpToggleActivity(type) {
+            hpCurrentActivityType = type;
+            document.getElementById('hp-show-exercise').classList.toggle('active', type === 'exercise');
+            document.getElementById('hp-show-yoga').classList.toggle('active', type === 'yoga');
+        }
+
+        // Modal and Recipe rendering
+        function hpShowRecipe() {
+            if (!hpCurrentRecipe) return;
+            const totalTime = (hpCurrentRecipe.steps || []).reduce((s, st) => s + (Number(st.duration) || 0), 0);
+            const ingredientsHtml = `<ul>${(hpCurrentRecipe.ingredients || []).map(i => `<li>${i}</li>`).join('')}</ul>`;
+            const stepsHtml = `<ol>${(hpCurrentRecipe.steps || []).map(s => `<li>${s.task} <span class="step-time">(${s.duration} min)</span></li>`).join('')}</ol>`;
+            document.getElementById('hp-recipe-details').innerHTML = `
+                <h3>${hpCurrentRecipe.recipe_name}</h3>
+                <p class="time">Total cooking time: ${totalTime} minutes</p>
+                <h4>Ingredients:</h4>${ingredientsHtml}
+                <h4>Instructions:</h4>${stepsHtml}
+            `;
+            document.getElementById('hp-recipe-timer').innerHTML = `
+                <h4>Cooking Timer</h4>
+                <div class="hp-timer" id="hp-recipe-timer-display">${String(totalTime).padStart(2, '0')}:00</div>
+                <div class="timer-controls"><button class="hp-btn" onclick="/* Timer logic could be added here */ void 0;">Start</button></div>
+            `;
+            document.getElementById('hp-recipe-modal').style.display = 'block';
+        }
+        function hpCloseModal() { document.getElementById('hp-recipe-modal').style.display = 'none'; }
+        window.addEventListener('click', (e) => { if (e.target === document.getElementById('hp-recipe-modal')) hpCloseModal(); });
+
+        // Workout timer + calories
+        function hpStartWorkoutTimer() {
+            document.getElementById('hp-start').style.display = 'none';
+            document.getElementById('hp-pause').style.display = 'inline-block';
+            document.getElementById('hp-stop').style.display = 'inline-block';
+            hpWorkoutTimerInterval = setInterval(() => {
+                hpWorkoutSeconds++;
+                const h = String(Math.floor(hpWorkoutSeconds / 3600)).padStart(2, '0');
+                const m = String(Math.floor((hpWorkoutSeconds % 3600) / 60)).padStart(2, '0');
+                const s = String(hpWorkoutSeconds % 60).padStart(2, '0');
+                document.getElementById('hp-workout-timer').textContent = `${h}:${m}:${s}`;
+                hpUpdateCalories();
+            }, 1000);
+        }
+        function hpPauseWorkoutTimer() {
+            clearInterval(hpWorkoutTimerInterval);
+            document.getElementById('hp-start').style.display = 'inline-block';
+            document.getElementById('hp-pause').style.display = 'none';
+        }
+        function hpStopWorkoutTimer() {
+            clearInterval(hpWorkoutTimerInterval);
+            const calories = document.getElementById('hp-calories').textContent;
+            hpSaveWorkout(hpWorkoutSeconds, calories);
+            hpWorkoutSeconds = 0;
+            document.getElementById('hp-tracker').style.display = 'none';
+            const startVisible = document.getElementById('hp-start-visible');
+            if (startVisible) startVisible.style.display = 'block';
+        }
+        function hpUpdateCalories() {
+            const weight = parseFloat(document.getElementById('hp-weight').value);
+            if (!weight || !hpCurrentFitnessPlan) return;
+            const met = Number(hpCurrentFitnessPlan.average_met) || 0;
+            const hours = hpWorkoutSeconds / 3600;
+            const calories = Math.round(met * weight * hours);
+            document.getElementById('hp-calories').textContent = String(calories);
+        }
+        function hpSaveWorkout(durationSeconds, caloriesBurned) {
+            const history = JSON.parse(localStorage.getItem('hpWorkoutHistory') || '[]');
+            history.push({ date: new Date().toISOString(), duration: Math.round(durationSeconds / 60), calories: caloriesBurned });
+            localStorage.setItem('hpWorkoutHistory', JSON.stringify(history));
+            alert('Workout saved!');
+            hpDisplayWorkoutHistory();
+        }
+        function hpDisplayWorkoutHistory() {
+            const container = document.getElementById('hp-history-log');
+            const history = JSON.parse(localStorage.getItem('hpWorkoutHistory') || '[]');
+            if (!container) return;
+            if (history.length === 0) { container.innerHTML = '<p>No workouts saved yet.</p>'; return; }
+            const rows = history.slice().reverse().map(h => {
+                const date = new Date(h.date).toLocaleString();
+                return `<tr><td>${date}</td><td>${h.duration}</td><td>${h.calories}</td></tr>`;
+            }).join('');
+            container.innerHTML = `
+                <table class="hp-history-table">
+                    <tr><th>Date</th><th>Duration (mins)</th><th>Calories (Est.)</th></tr>
+                    ${rows}
+                </table>`;
+        }
         // Load report analysis functionality
         function loadReportAnalysis() {
             // Load the existing report analysis page content
@@ -1962,13 +2363,12 @@
             document.getElementById('results-section').style.display = 'block';
             
             // Show loading state
-            document.getElementById('llmConfidenceBadge').textContent = '0%';
-            document.getElementById('medicalRelevance').textContent = 'Loading...';
-            document.getElementById('llmPrimaryCondition').textContent = 'Loading...';
-            document.getElementById('llmDescription').textContent = 'Loading...';
-            document.getElementById('llmSymptoms').textContent = 'Loading...';
-            document.getElementById('llmSeverity').textContent = 'Loading...';
-            document.getElementById('llmRecommendations').textContent = 'Loading...';
+            document.getElementById('confidenceBadge').textContent = '0%';
+            document.getElementById('primaryCondition').textContent = 'Loading...';
+            document.getElementById('conditionDescription').textContent = 'Loading...';
+            document.getElementById('conditionSymptoms').textContent = 'Loading...';
+            document.getElementById('conditionSeverity').textContent = 'Loading...';
+            document.getElementById('conditionRecommendations').textContent = 'Loading...';
             document.getElementById('rawAnalysis').textContent = 'Loading...';
         }
 
@@ -1977,26 +2377,24 @@
             
             // Update LLM Analysis
             const llmConfidence = llmAnalysis.confidence || '0%';
-            document.getElementById('llmConfidenceBadge').textContent = llmConfidence;
-            document.getElementById('medicalRelevance').textContent = llmAnalysis.medical_relevance || 'Not specified';
-            document.getElementById('llmPrimaryCondition').textContent = llmAnalysis.primary_condition || 'Not specified';
-            document.getElementById('llmDescription').textContent = llmAnalysis.description || 'No description available';
-            document.getElementById('llmSymptoms').textContent = llmAnalysis.symptoms || 'No specific symptoms listed';
-            document.getElementById('llmSeverity').textContent = llmAnalysis.severity || 'Severity not specified';
-            document.getElementById('llmRecommendations').textContent = llmAnalysis.recommendations || 'No specific recommendations';
+            document.getElementById('confidenceBadge').textContent = llmConfidence;
+            document.getElementById('primaryCondition').textContent = llmAnalysis.primary_condition || 'Not specified';
+            document.getElementById('conditionDescription').textContent = llmAnalysis.description || 'No description available';
+            document.getElementById('conditionSymptoms').textContent = llmAnalysis.symptoms || 'No specific symptoms listed';
+            document.getElementById('conditionSeverity').textContent = llmAnalysis.severity || 'Severity not specified';
+            document.getElementById('conditionRecommendations').textContent = llmAnalysis.recommendations || 'No specific recommendations';
 
             // Update Raw LLM Analysis
             document.getElementById('rawAnalysis').textContent = llmAnalysis.raw_analysis || 'No detailed analysis available';
         }
 
         function displayError(message) {
-            document.getElementById('llmConfidenceBadge').textContent = '0%';
-            document.getElementById('medicalRelevance').textContent = message;
-            document.getElementById('llmPrimaryCondition').textContent = 'Error';
-            document.getElementById('llmDescription').textContent = message;
-            document.getElementById('llmSymptoms').textContent = 'Please try again.';
-            document.getElementById('llmSeverity').textContent = 'Unknown';
-            document.getElementById('llmRecommendations').textContent = 'Please try again.';
+            document.getElementById('confidenceBadge').textContent = '0%';
+            document.getElementById('primaryCondition').textContent = 'Error';
+            document.getElementById('conditionDescription').textContent = message;
+            document.getElementById('conditionSymptoms').textContent = 'Please try again.';
+            document.getElementById('conditionSeverity').textContent = 'Unknown';
+            document.getElementById('conditionRecommendations').textContent = 'Please try again.';
             document.getElementById('rawAnalysis').textContent = message;
         }
     </script>
