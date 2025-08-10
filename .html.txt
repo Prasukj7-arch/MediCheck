@@ -1,0 +1,253 @@
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import axios from 'axios';
+
+// --- STYLES ---
+const styles = {
+  // Navbar Styles
+  nav: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '1rem 2rem',
+    backgroundColor: '#ffffff',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    fontFamily: 'sans-serif',
+  },
+  navBrand: {
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
+    color: '#333',
+    textDecoration: 'none',
+  },
+  navLinkSOS: {
+    textDecoration: 'none',
+    color: '#d9534f',
+    fontWeight: 'bold',
+    backgroundColor: '#fde8e8',
+    padding: '0.5rem 1rem',
+    borderRadius: '20px',
+  },
+  mainContainer: {
+    padding: '2rem',
+    fontFamily: 'sans-serif',
+    backgroundColor: '#f4f7f6'
+  },
+  findNearbyContainer: {
+    padding: '20px',
+    fontFamily: 'Arial, sans-serif',
+    maxWidth: '900px',
+    margin: '0 auto',
+    backgroundColor: '#fff',
+    borderRadius: '12px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+  },
+  mapContainer: {
+    width: '100%',
+    height: '450px',
+    marginBottom: '20px',
+    borderRadius: '8px',
+    backgroundColor: '#e0e0e0'
+  },
+  sosButton: {
+    padding: '15px 30px',
+    fontSize: '18px',
+    fontWeight: 'bold',
+    color: 'white',
+    backgroundColor: '#d9534f', // Back to red
+    border: 'none',
+    borderRadius: '50px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '10px',
+    margin: '20px auto',
+    boxShadow: '0 4px 10px rgba(217, 83, 79, 0.4)',
+    transition: 'background-color 0.3s ease',
+  },
+  hospitalList: {
+    listStyle: 'none',
+    padding: 0,
+  },
+  hospitalItem: {
+    padding: '15px',
+    border: '1px solid #ddd',
+    borderRadius: '8px',
+    marginBottom: '10px',
+    backgroundColor: '#f9f9f9',
+    transition: 'transform 0.2s ease',
+  },
+  ambulanceButton: {
+    padding: '10px 15px',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    color: 'white',
+    backgroundColor: '#d9534f', // Red for emergency
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    marginTop: '10px',
+  },
+};
+
+// --- COMPONENTS ---
+
+const Navbar = () => (
+  <nav style={styles.nav}>
+    <a href="#" style={styles.navBrand}>Medicheck</a>
+    <a href="#" style={styles.navLinkSOS}>🆘 SOS</a>
+  </nav>
+);
+
+const FindNearbyHospital = () => {
+  const [currentPosition, setCurrentPosition] = useState(null);
+  const [hospitals, setHospitals] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const markersRef = useRef([]);
+
+  const loadGoogleMapsScript = (callback) => {
+    const apiKey = "AIzaSyAykxSzoY2_DOwa9DmkqHp9heFqNuIFvGc"; 
+    if (window.google && window.google.maps) {
+      callback();
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places;
+    script.async = true;
+    script.defer = true;
+    script.onload = callback;
+    document.head.appendChild(script);
+  };
+
+  useEffect(() => {
+    loadGoogleMapsScript(() => {
+      if (mapRef.current && !mapInstanceRef.current) {
+        mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
+          center: { lat: 17.3850, lng: 78.4867 },
+          zoom: 11,
+        });
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!mapInstanceRef.current || !window.google) return;
+
+    markersRef.current.forEach(marker => marker.setMap(null));
+    markersRef.current = [];
+
+    const bounds = new window.google.maps.LatLngBounds();
+
+    if (currentPosition) {
+      const userMarker = new window.google.maps.Marker({
+        position: currentPosition,
+        map: mapInstanceRef.current,
+        title: 'Your Simulated Location',
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: "#4285F4",
+          fillOpacity: 1,
+          strokeColor: "white",
+          strokeWeight: 2,
+        },
+      });
+      markersRef.current.push(userMarker);
+      bounds.extend(userMarker.getPosition());
+    }
+
+    hospitals.forEach(hospital => {
+      const hospitalMarker = new window.google.maps.Marker({
+        position: hospital.location,
+        map: mapInstanceRef.current,
+        title: hospital.name,
+        icon: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
+      });
+      markersRef.current.push(hospitalMarker);
+      bounds.extend(hospitalMarker.getPosition());
+    });
+    
+    if (markersRef.current.length > 0) {
+        mapInstanceRef.current.fitBounds(bounds);
+    }
+
+  }, [hospitals, currentPosition]);
+
+  const handleSearchClick = () => {
+    setLoading(true);
+    setHospitals([]);
+    setError('');
+
+    const simulatedPosition = { lat: 17.43, lng: 78.44 }; 
+    setCurrentPosition(simulatedPosition);
+
+    setTimeout(() => {
+      const mockHospitals = [
+          { id: '1', name: 'Apollo Hospital', address: 'Jubilee Hills, Hyderabad', location: { lat: 17.4202, lng: 78.4023 }, rating: 4.5, userRatingsTotal: 2400, phoneNumber: '+914023607777' },
+          { id: '2', name: 'KIMS Hospital', address: 'Kondapur, Hyderabad', location: { lat: 17.4678, lng: 78.3733 }, rating: 4.7, userRatingsTotal: 3100, phoneNumber: '+914044885000' },
+          { id: '3', name: 'Yashoda Hospital', address: 'Somajiguda, Hyderabad', location: { lat: 17.4212, lng: 78.4552 }, rating: 4.4, userRatingsTotal: 1950, phoneNumber: '+914045674567' },
+          { id: '4', name: 'Continental Hospital', address: 'Gachibowli, Hyderabad', location: { lat: 17.44, lng: 78.36 }, rating: 4.8, userRatingsTotal: 5200, phoneNumber: '+914067000000' },
+          { id: '5', name: 'Rainbow Children\'s Hospital', address: 'Banjara Hills, Hyderabad', location: { lat: 17.415, lng: 78.445 }, rating: 4.9, userRatingsTotal: 6100, phoneNumber: null },
+      ];
+      setHospitals(mockHospitals);
+      setLoading(false);
+    }, 1500);
+  };
+
+  return (
+    <div style={styles.findNearbyContainer}>
+      <h2>Emergency SOS</h2>
+      <p>Click the button below to find nearby hospitals.</p>
+      
+      <button 
+        onClick={handleSearchClick} 
+        disabled={loading} 
+        style={styles.sosButton}
+      >
+        {loading ? 'Searching...' : '🆘 Find Nearby Hospitals'}
+      </button>
+
+      {error && <p style={{ color: 'red', textAlign: 'center' }}>{error}</p>}
+
+      <div ref={mapRef} style={styles.mapContainer}></div>
+
+      {hospitals.length > 0 && (
+        <div>
+          <h3>Hospitals Near You</h3>
+          <ul style={styles.hospitalList}>
+            {hospitals.map((hospital) => (
+              <li key={hospital.id} style={styles.hospitalItem}>
+                <h4>{hospital.name}</h4>
+                <p><strong>Address:</strong> {hospital.address}</p>
+                <p><strong>Rating:</strong> {hospital.rating} ⭐ ({hospital.userRatingsTotal} reviews)</p>
+                <p><strong>Contact:</strong> {hospital.phoneNumber || 'Not available'}</p>
+                <button
+                  style={{...styles.ambulanceButton, opacity: hospital.phoneNumber ? 1 : 0.6, cursor: hospital.phoneNumber ? 'pointer' : 'not-allowed'}}
+                  disabled={!hospital.phoneNumber}
+                  onClick={() => { if(hospital.phoneNumber) window.location.href = 'tel:' + hospital.phoneNumber; }}
+                >
+                  🚑 Get Ambulance
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default function App() {
+  return (
+    <>
+      <Navbar />
+      <main style={styles.mainContainer}>
+        <FindNearbyHospital />
+      </main>
+    </>
+  );
+}
